@@ -1,0 +1,9 @@
+<resources>
+
+    <style name="OkLoadingTheme" parent="Theme.AppCompat.Dialog">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+</resources>
