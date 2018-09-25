@@ -6,6 +6,7 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -24,6 +25,7 @@ import com.lzy.okgo.request.PutRequest;
 import com.lzy.okgo.request.base.Request;
 import com.uguke.okgo.reflect.TypeBuilder;
 
+import java.lang.ref.Reference;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,9 @@ import java.util.Map;
  * @date    2018/06/14
  */
 public class OkRequest<T> {
+
+    /** 用来监控内存泄漏 **/
+    private Reference<Context> contextRef;
 
     // OkGo请求相关
 
@@ -71,21 +76,25 @@ public class OkRequest<T> {
 
     public OkRequest<T> with(@NonNull Context context) {
         loading = new LoadingDialog(context);
+        loadingColor = ContextCompat.getColor(context, R.color.colorPrimary);
         return this;
     }
 
     public OkRequest<T> with(@NonNull android.app.Fragment fragment) {
         loading = new LoadingDialog(fragment.getActivity());
+        loadingColor = ContextCompat.getColor(fragment.getActivity(), R.color.colorPrimary);
         return this;
     }
 
     public OkRequest<T> with(@NonNull Fragment fragment) {
         loading = new LoadingDialog(fragment.getActivity());
+        loadingColor = ContextCompat.getColor(fragment.getContext(), R.color.colorPrimary);
         return this;
     }
 
     public OkRequest<T> with(@NonNull View view) {
         loading = new LoadingDialog(view.getContext());
+        loadingColor = ContextCompat.getColor(view.getContext(), R.color.colorPrimary);
         return this;
     }
 
