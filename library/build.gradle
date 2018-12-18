@@ -6,8 +6,8 @@ android {
     defaultConfig {
         minSdkVersion 15
         targetSdkVersion 26
-        versionCode 1
-        versionName "1.0.1"
+        versionCode 2
+        versionName "1.0.2"
     }
 
     buildTypes {
@@ -24,4 +24,5 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:26.1.0'
     api 'com.lzy.net:okgo:3.0.4'
     api 'com.google.code.gson:gson:2.8.5'
+    api 'com.github.uguker:typebuilder:1.0.3'
 }

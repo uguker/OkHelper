@@ -7,7 +7,7 @@ import com.google.gson.annotations.SerializedName;
  * @author  雷珏
  * @date    2018/06/14
  */
-public class NetBean<T> {
+public class NetData<T> {
 
     @SerializedName(
             value = "code",
@@ -20,9 +20,9 @@ public class NetBean<T> {
     private String message;
 
     @SerializedName(
-            value = "result",
-            alternate = {"data"})
-    private T result;
+            value = "data",
+            alternate = {"result"})
+    private T data;
 
     public int getCode() {
         return code;
@@ -40,11 +40,12 @@ public class NetBean<T> {
         this.message = message;
     }
 
-    public T getResult() {
-        return result;
+    public T getData() {
+        return data;
     }
 
-    public void setResult(T result) {
-        this.result = result;
+    public NetData setData(T data) {
+        this.data = data;
+        return this;
     }
 }

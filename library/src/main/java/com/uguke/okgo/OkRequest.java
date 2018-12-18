@@ -1,21 +1,18 @@
 package com.uguke.okgo;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.support.annotation.ColorInt;
-import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
-import android.view.View;
 
 import com.google.gson.Gson;
 import com.lzy.okgo.OkGo;
+import com.lzy.okgo.callback.FileCallback;
 import com.lzy.okgo.callback.StringCallback;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpMethod;
 import com.lzy.okgo.model.HttpParams;
+import com.lzy.okgo.model.Progress;
 import com.lzy.okgo.model.Response;
 import com.lzy.okgo.request.DeleteRequest;
 import com.lzy.okgo.request.OptionsRequest;
@@ -23,10 +20,11 @@ import com.lzy.okgo.request.PatchRequest;
 import com.lzy.okgo.request.PostRequest;
 import com.lzy.okgo.request.PutRequest;
 import com.lzy.okgo.request.base.Request;
-import com.uguke.okgo.reflect.TypeBuilder;
+import com.uguke.reflect.TypeBuilder;
 
-import java.lang.ref.Reference;
+import java.io.File;
 import java.lang.reflect.Type;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -37,328 +35,371 @@ import java.util.Map;
  */
 public class OkRequest<T> {
 
-    /** 用来监控内存泄漏 **/
-    private Reference<Context> contextRef;
-
     // OkGo请求相关
 
-    private String url;
-    private String upJson;
-    private Type type;
+    private String mUrl;
+    private String mUpJson;
+    private Type mType;
+    private Object mTag;
+    private boolean mDownload;
 
-    private HttpMethod method;
-    private HttpParams params;
-    private HttpHeaders headers;
+    private List<Integer> mFilters;
+    private HttpMethod mMethod;
+    private HttpParams mParams;
+    private HttpHeaders mHeaders;
 
     // Loading对话框相关
 
-    private boolean dimEnabled;
-    private int loadingColor;
-    private CharSequence loadingText;
-    private LoadingDialog loading;
+    private LoadingStrategy mStrategy;
+    private LoadingDialog mLoading;
 
     OkRequest(Class<?> clazz, boolean list) {
         if (list) {
-            type = TypeBuilder.newInstance(NetBean.class)
+            mType = TypeBuilder.newInstance(NetData.class)
                     .beginSubType(List.class)
                     .addTypeParam(clazz)
                     .endSubType()
                     .build();
         } else {
-            type = TypeBuilder.newInstance(NetBean.class)
-                    .addTypeParam(clazz)
-                    .build();
+            if (clazz == File.class) {
+                mDownload = true;
+                mType = TypeBuilder.newInstance(File.class).build();
+            } else {
+                mType = TypeBuilder.newInstance(NetData.class)
+                        .addTypeParam(clazz)
+                        .build();
+            }
         }
-        params = new HttpParams();
-        headers = new HttpHeaders();
-        dimEnabled = true;
+        mParams = new HttpParams();
+        mHeaders = new HttpHeaders();
+        mStrategy = OkHelper.sStrategy.clone();
+        mFilters = new LinkedList<>();
+        mFilters.add(OkHelper.sFailedCode);
     }
 
-    public OkRequest<T> with(@NonNull Context context) {
-        loading = new LoadingDialog(context);
-        loadingColor = ContextCompat.getColor(context, R.color.colorPrimary);
+    public OkRequest<T> tag(Object tag) {
+        mTag = tag;
         return this;
     }
 
-    public OkRequest<T> with(@NonNull android.app.Fragment fragment) {
-        loading = new LoadingDialog(fragment.getActivity());
-        loadingColor = ContextCompat.getColor(fragment.getActivity(), R.color.colorPrimary);
+    public OkRequest<T> filters(int... filters) {
+        for (int code : filters) {
+            mFilters.add(code);
+        }
         return this;
     }
 
-    public OkRequest<T> with(@NonNull Fragment fragment) {
-        loading = new LoadingDialog(fragment.getActivity());
-        loadingColor = ContextCompat.getColor(fragment.getContext(), R.color.colorPrimary);
+    public OkRequest<T> loading(Context context) {
+        mLoading = new LoadingDialog(context);
         return this;
     }
 
-    public OkRequest<T> with(@NonNull View view) {
-        loading = new LoadingDialog(view.getContext());
-        loadingColor = ContextCompat.getColor(view.getContext(), R.color.colorPrimary);
-        return this;
-    }
-
-    public OkRequest<T> loadingText(CharSequence text) {
-        this.loadingText = text;
+    public OkRequest<T> loadingText(String text) {
+        mStrategy.setText(text);
         return this;
     }
 
     public OkRequest<T> loadingText(@StringRes int resId) {
-        this.loadingText = OkGo.getInstance().getContext().getString(resId);
+        mStrategy.setTextId(resId);
         return this;
     }
 
     public OkRequest<T> loadingColor(@ColorInt int color) {
-        this.loadingColor = color;
+        mStrategy.setColor(color);
         return this;
     }
 
     public OkRequest<T> loadingColor(String color) {
-        this.loadingColor = Color.parseColor(color);
+        mStrategy.setColor(color);
         return this;
     }
 
-    public OkRequest<T> dimEnabled(boolean dimEnabled) {
-        this.dimEnabled = dimEnabled;
+    public OkRequest<T> loadingSize(float size) {
+        mStrategy.setSize(size);
+        return this;
+    }
+
+    public OkRequest<T> loadingDimEnable(boolean enable) {
+        mStrategy.setDimEnable(enable);
         return this;
     }
 
     public OkRequest<T> get(String url) {
-        this.url = url;
-        this.method = HttpMethod.GET;
+        mUrl = url;
+        mMethod = HttpMethod.GET;
         return this;
     }
 
     public OkRequest<T> post(String url) {
-        this.url = url;
-        this.method = HttpMethod.POST;
+        mUrl = url;
+        mMethod = HttpMethod.POST;
         return this;
     }
 
     public OkRequest<T> put(String url) {
-        this.url = url;
-        this.method = HttpMethod.PUT;
+        mUrl = url;
+        mMethod = HttpMethod.PUT;
         return this;
     }
 
     public OkRequest<T> delete(String url) {
-        this.url = url;
-        this.method = HttpMethod.DELETE;
+        mUrl = url;
+        mMethod = HttpMethod.DELETE;
         return this;
     }
 
     public OkRequest<T> head(String url) {
-        this.url = url;
-        this.method = HttpMethod.HEAD;
+        mUrl = url;
+        mMethod = HttpMethod.HEAD;
         return this;
     }
 
     public OkRequest<T> patch(String url) {
-        this.url = url;
-        this.method = HttpMethod.PATCH;
+        mUrl = url;
+        mMethod = HttpMethod.PATCH;
         return this;
     }
 
     public OkRequest<T> options(String url) {
-        this.url = url;
-        this.method = HttpMethod.OPTIONS;
+        mUrl = url;
+        mMethod = HttpMethod.OPTIONS;
         return this;
     }
 
     public OkRequest<T> trace(String url) {
-        this.url = url;
-        this.method = HttpMethod.TRACE;
+        mUrl = url;
+        mMethod = HttpMethod.TRACE;
         return this;
     }
 
-
     public OkRequest<T> upJson(String upJson) {
-        this.upJson = upJson;
+        mUpJson = upJson;
         return this;
     }
 
     public OkRequest<T> headers(HttpHeaders headers) {
-        this.headers.put(headers);
+        mHeaders.put(headers);
         return this;
     }
 
     public OkRequest<T> headers(String key, String value) {
-        headers.put(key, value);
+        mHeaders.put(key, value);
         return this;
     }
 
     public OkRequest<T> removeHeader(String key) {
-        headers.remove(key);
+        mHeaders.remove(key);
         return this;
     }
 
     public OkRequest<T> removeAllHeaders() {
-        headers.clear();
+        mHeaders.clear();
         return this;
     }
 
-    public OkRequest<T> params(Map<String, String> params, boolean... isReplace) {
-        this.params.put(params, isReplace);
+    public OkRequest<T> params(Map<String, String> params, boolean... replace) {
+        mParams.put(params, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, String value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, String value, boolean... replace) {
+        mParams.put(key, value, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, int value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, int value, boolean... replace) {
+        mParams.put(key, value, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, float value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, float value, boolean... replace) {
+        mParams.put(key, value, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, double value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, double value, boolean... replace) {
+        mParams.put(key, value, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, long value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, long value, boolean... replace) {
+        mParams.put(key, value, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, char value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, char value, boolean... replace) {
+        mParams.put(key, value, replace);
         return this;
     }
 
-    public OkRequest<T> params(String key, boolean value, boolean... isReplace) {
-        params.put(key, value, isReplace);
+    public OkRequest<T> params(String key, boolean value, boolean... replace) {
+        mParams.put(key, value, replace);
+        return this;
+    }
+
+    public OkRequest<T> params(String key, File file) {
+        mParams.put(key, file);
+        return this;
+    }
+
+    public OkRequest<T> params(String key, List<File> files) {
+        mParams.putFileParams(key, files);
+        return this;
+    }
+
+    public OkRequest<T> paramsWrapper(String key, HttpParams.FileWrapper fileWrapper) {
+        mParams.put(key, fileWrapper);
+        return this;
+    }
+
+    public OkRequest<T> paramsWrapper(String key, List<HttpParams.FileWrapper> fileWrappers) {
+        mParams.putFileWrapperParams(key, fileWrappers);
         return this;
     }
 
     public OkRequest<T> addUrlParams(String key, List<String> values) {
-        params.putUrlParams(key, values);
+        mParams.putUrlParams(key, values);
         return this;
     }
 
     public OkRequest<T> removeParam(String key) {
-        params.remove(key);
+        mParams.remove(key);
         return this;
     }
 
     public OkRequest<T> removeAllParams() {
-        params.clear();
+        mParams.clear();
         return this;
     }
 
-    public void execute(@NonNull final BaseCallback<NetBean<T>> callback) {
-        initLoading();
+    public void execute(Callback<NetData<T>> callback) {
+        if (mLoading != null) {
+            mLoading.strategy(mStrategy);
+        }
+
+        if (mDownload) {
+            Request<File, ?> request = OkGo.get(mUrl);
+            request.tag(mTag);
+            request.params(mParams);
+            request.headers(mHeaders);
+            execute2(request, callback);
+            return;
+        }
+
         Request<String, ?> request;
-        switch (method) {
+        switch (mMethod) {
             case POST:
-                PostRequest<String> postRequest = OkGo.<String>post(url)
-                        .params(params)
-                        .headers(headers);
-                if (!TextUtils.isEmpty(upJson)) {
-                    postRequest.upJson(upJson);
+                PostRequest<String> postRequest = OkGo.post(mUrl);
+                if (!TextUtils.isEmpty(mUpJson)) {
+                    postRequest.upJson(mUpJson);
                 }
                 request = postRequest;
-
                 break;
             case PUT:
-                PutRequest<String> putRequest = OkGo.<String>put(url)
-                        .params(params)
-                        .headers(headers);
-                if (!TextUtils.isEmpty(upJson)) {
-                    putRequest.upJson(upJson);
+                PutRequest<String> putRequest = OkGo.put(mUrl);
+                if (!TextUtils.isEmpty(mUpJson)) {
+                    putRequest.upJson(mUpJson);
                 }
                 request = putRequest;
                 break;
             case DELETE:
-                DeleteRequest<String> deleteRequest = OkGo.<String>delete(url)
-                        .params(params)
-                        .headers(headers);
-                if (!TextUtils.isEmpty(upJson)) {
-                    deleteRequest.upJson(upJson);
+                DeleteRequest<String> deleteRequest = OkGo.delete(mUrl);
+                if (!TextUtils.isEmpty(mUpJson)) {
+                    deleteRequest.upJson(mUpJson);
                 }
                 request = deleteRequest;
                 break;
             case HEAD:
-                request = OkGo.<String>head(url)
-                    .params(params)
-                    .headers(headers);
+                request = OkGo.head(mUrl);
                 break;
             case PATCH:
-                PatchRequest<String> patchRequest = OkGo.<String>patch(url)
-                        .params(params)
-                        .headers(headers);
-                if (!TextUtils.isEmpty(upJson)) {
-                    patchRequest.upJson(upJson);
+                PatchRequest<String> patchRequest = OkGo.patch(mUrl);
+                if (!TextUtils.isEmpty(mUpJson)) {
+                    patchRequest.upJson(mUpJson);
                 }
                 request = patchRequest;
                 break;
             case OPTIONS:
-                OptionsRequest<String> optionsRequest = OkGo.<String>options(url)
-                        .params(params)
-                        .headers(headers);
-                if (!TextUtils.isEmpty(upJson)) {
-                    optionsRequest.upJson(upJson);
+                OptionsRequest<String> optionsRequest = OkGo.options(mUrl);
+                if (!TextUtils.isEmpty(mUpJson)) {
+                    optionsRequest.upJson(mUpJson);
                 }
                 request = optionsRequest;
                 break;
             case TRACE:
-                request = OkGo.<String>trace(url)
-                        .params(params)
-                        .headers(headers);
+                request = OkGo.trace(mUrl);
                 break;
             default:
-                request = OkGo.<String>get(url)
-                        .params(params)
-                        .headers(headers);
+                request = OkGo.get(mUrl);
         }
+        request.tag(mTag);
+        request.params(mParams);
+        request.headers(mHeaders);
+        execute(request, callback);
+    }
+
+    private void execute(Request<String, ?> request, final Callback<NetData<T>> callback) {
         request.execute(new StringCallback() {
             @Override
             public void onSuccess(Response<String> response) {
-                NetBean<T> netBean = new Gson().fromJson(response.body(), type);
-                if (OkHelper.codeFilter != null) {
-                    if (OkHelper.codeFilter.filter(netBean)) {
-                        callback.onError(netBean.getMessage());
-                        return;
+                dismissLoading();
+                NetData<T> data = new Gson().fromJson(response.body(), mType);
+                if (mFilters != null) {
+                    for (int filter : mFilters) {
+                        if (filter == data.getCode()) {
+                            callback.onFailed(data.getMessage());
+                            return;
+                        }
                     }
                 }
-                callback.onSuccess(netBean);
+                callback.onSucceed(data);
+            }
+
+            @Override
+            public void onStart(Request<String, ? extends Request> request) {
+                super.onStart(request);
+                if (mLoading != null) {
+                    mLoading.show();
+                }
             }
 
             @Override
             public void onError(Response<String> response) {
                 super.onError(response);
-                callback.onError(response.body());
-            }
-
-            @Override
-            public void onStart(Request<String, ? extends Request> request) {
-                if (loading != null && !loading.isShowing()) {
-                    loading.show();
-                }
-                callback.onStart();
-            }
-
-            @Override
-            public void onFinish() {
-                if (loading != null && loading.isShowing()) {
-                    loading.dismiss();
-                }
-                callback.onFinish();
+                dismissLoading();
+                callback.onFailed(OkHelper.sFailedText);
             }
         });
     }
 
-    private void initLoading() {
-        if (loading != null) {
-            loading.color(loadingColor)
-                    .text(loadingText)
-                    .dimEnabled(dimEnabled);
+    @SuppressWarnings("unchecked")
+    private void execute2(final Request<File, ?> request, final Callback<NetData<T>> callback) {
+        request.execute(new FileCallback() {
+            @Override
+            public void onSuccess(Response<File> response) {
+                NetData<File> data = new NetData<>();
+                data.setCode(OkHelper.sSucceedCode);
+                data.setData(response.body());
+                callback.onSucceed((NetData<T>) data);
+            }
+
+            @Override
+            public void onError(Response<File> response) {
+                super.onError(response);
+                callback.onFailed(OkHelper.sFailedText);
+            }
+
+            @Override
+            public void downloadProgress(Progress progress) {
+                super.downloadProgress(progress);
+                callback.onProgress(progress);
+            }
+        });
+    }
+
+    private void dismissLoading() {
+        if (mLoading != null && mLoading.isShowing()) {
+            mLoading.dismiss();
         }
     }
 
