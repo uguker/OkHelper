@@ -59,13 +59,13 @@ public class LoadingDialog extends Dialog {
         return this;
     }
 
-    public LoadingDialog color(String color) {
-        DrawableCompat.setTint(mLoading.getIndeterminateDrawable(), Color.parseColor(color));
+    public LoadingDialog text(CharSequence text) {
+        mText.setText(text);
         return this;
     }
 
-    public LoadingDialog text(CharSequence text) {
-        mText.setText(text);
+    public LoadingDialog text(@StringRes int resId) {
+        mText.setText(resId);
         return this;
     }
 
@@ -76,17 +76,5 @@ public class LoadingDialog extends Dialog {
         mText.setTextSize(size / 4);
         mText.setPadding(0, (int) (size / 10 * density), 0, 0);
         return this;
-    }
-
-    public LoadingDialog text(@StringRes int resId) {
-        mText.setText(resId);
-        return this;
-    }
-
-    public LoadingDialog strategy(LoadingStrategy strategy) {
-        return text(strategy.getText())
-                .size(strategy.getSize())
-                .color(strategy.getColor())
-                .dimEnable(strategy.isDimEnable());
     }
 }

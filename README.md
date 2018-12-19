@@ -14,13 +14,13 @@ allprojects {
 2. 添加依赖关系
 ```
 dependencies {
-	implementation 'com.github.uguker:okhelper:1.0.3'
+	implementation 'com.github.uguker:okutils:1.0.4'
 }
 ```
 ## 简单使用
 ```
-	OkHelper.init(app);
-	OkHelper
+	OkUtils.init(app);
+	OkUtils
 	        // 返回NetData<File>实体
 	        // .toFile()
 		    // 返回NetData<List<Object>>实体

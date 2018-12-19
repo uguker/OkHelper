@@ -3,6 +3,7 @@ package com.uguke.okgo;
 import android.content.Context;
 import android.support.annotation.ColorInt;
 import android.support.annotation.StringRes;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
@@ -52,8 +53,14 @@ public class OkRequest<T> {
 
     // Loading对话框相关
 
-    private LoadingStrategy mStrategy;
+    private int mLoadingColor;
+    private float mLoadingSize;
+    private String mLoadingText;
+    private boolean mLoadingDimEnable;
     private LoadingDialog mLoading;
+
+    private FiltersHandler mFiltersHandler;
+    private HeadersHandler mHeadersHandler;
 
     OkRequest(Class<?> clazz, boolean list) {
         if (list) {
@@ -74,7 +81,6 @@ public class OkRequest<T> {
         }
         mParams = new HttpParams();
         mHeaders = new HttpHeaders();
-        mStrategy = OkHelper.sStrategy.clone();
         mFilters = new LinkedList<>();
         mToSucceed = true;
     }
@@ -108,32 +114,22 @@ public class OkRequest<T> {
     }
 
     public OkRequest<T> loadingText(String text) {
-        mStrategy.setText(text);
-        return this;
-    }
-
-    public OkRequest<T> loadingText(@StringRes int resId) {
-        mStrategy.setTextId(resId);
+        mLoadingText = text;
         return this;
     }
 
     public OkRequest<T> loadingColor(@ColorInt int color) {
-        mStrategy.setColor(color);
-        return this;
-    }
-
-    public OkRequest<T> loadingColor(String color) {
-        mStrategy.setColor(color);
+        mLoadingColor = color;
         return this;
     }
 
     public OkRequest<T> loadingSize(float size) {
-        mStrategy.setSize(size);
+        mLoadingSize = size;
         return this;
     }
 
     public OkRequest<T> loadingDimEnable(boolean enable) {
-        mStrategy.setDimEnable(enable);
+        mLoadingDimEnable = enable;
         return this;
     }
 
@@ -285,11 +281,17 @@ public class OkRequest<T> {
         return this;
     }
 
-    public void execute(Callback<NetData<T>> callback) {
-        if (mLoading != null) {
-            mLoading.strategy(mStrategy);
-        }
+    public OkRequest<T> headersHandler(HeadersHandler handler) {
+        mHeadersHandler = handler;
+        return this;
+    }
 
+    public OkRequest<T> filtersHandler(FiltersHandler handler) {
+        mFiltersHandler = handler;
+        return this;
+    }
+
+    public void execute(Callback<NetData<T>> callback) {
         if (mDownload) {
             Request<File, ?> request = OkGo.get(mUrl);
             request.tag(mTag);
@@ -351,48 +353,59 @@ public class OkRequest<T> {
         execute(request, callback);
     }
 
-    private void execute(Request<String, ?> request, final Callback<NetData<T>> callback) {
+    private void execute(final Request<String, ?> request, final Callback<NetData<T>> callback) {
         request.execute(new StringCallback() {
             @Override
             public void onSuccess(Response<String> response) {
+                // 如果需要，取消对话框
                 dismissLoading();
+                OkUtils utils = OkUtils.Holder.INSTANCE;
+                // 如果设置了Headers处理器
+                if (mHeadersHandler != null || utils.mHeadersHandler != null) {
+                    if (mHeadersHandler != null) {
+                        // 不继续向下
+                        if (mHeadersHandler.onHandle(response.headers())) {
+                            return;
+                        }
+                    } else {
+                        // 不继续向下
+                        if (utils.mHeadersHandler.onHandle(response.headers())) {
+                            return;
+                        }
+                    }
+                }
                 NetData<T> data = new Gson().fromJson(response.body(), mType);
-                if (OkHelper.sSucceedCode == data.getCode()) {
+                // 如果有异常
+                if (data == null) {
+                    return;
+                }
+                // 根据code回调
+                if (utils.mSucceedCode == data.getCode()) {
                     callback.onSucceed(data);
-                } else if (OkHelper.sFailedCode == data.getCode()) {
+                } else if (utils.mFailedCode == data.getCode()) {
                     callback.onFailed(data.getMessage());
                 } else {
                     for (int filter : mFilters) {
                         if (filter == data.getCode()) {
-                            if (mToSucceed) {
-                                callback.onSucceed(data);
-                            } else {
-                                callback.onFailed(data.getMessage());
-                            }
+                            handleFilters(data, mToSucceed, callback);
                             return;
                         }
                     }
-                    if (mToSucceed) {
-                        callback.onFailed(data.getMessage());
-                    } else {
-                        callback.onSucceed(data);
-                    }
+                    handleFilters(data, !mToSucceed, callback);
                 }
             }
 
             @Override
             public void onStart(Request<String, ? extends Request> request) {
                 super.onStart(request);
-                if (mLoading != null) {
-                    mLoading.show();
-                }
+                showLoading();
             }
 
             @Override
             public void onError(Response<String> response) {
                 super.onError(response);
                 dismissLoading();
-                callback.onFailed(OkHelper.sFailedText);
+                callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
             }
         });
     }
@@ -402,8 +415,23 @@ public class OkRequest<T> {
         request.execute(new FileCallback() {
             @Override
             public void onSuccess(Response<File> response) {
+                OkUtils utils = OkUtils.Holder.INSTANCE;
+                // 如果设置了Headers处理器
+                if (mHeadersHandler != null || utils.mHeadersHandler != null) {
+                    if (mHeadersHandler != null) {
+                        // 不继续向下
+                        if (mHeadersHandler.onHandle(response.headers())) {
+                            return;
+                        }
+                    } else {
+                        // 不继续向下
+                        if (utils.mHeadersHandler.onHandle(response.headers())) {
+                            return;
+                        }
+                    }
+                }
                 NetData<File> data = new NetData<>();
-                data.setCode(OkHelper.sSucceedCode);
+                data.setCode(OkUtils.Holder.INSTANCE.mSucceedCode);
                 data.setData(response.body());
                 callback.onSucceed((NetData<T>) data);
             }
@@ -411,7 +439,7 @@ public class OkRequest<T> {
             @Override
             public void onError(Response<File> response) {
                 super.onError(response);
-                callback.onFailed(OkHelper.sFailedText);
+                callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
             }
 
             @Override
@@ -422,10 +450,52 @@ public class OkRequest<T> {
         });
     }
 
+    private void handleFilters(NetData<T> data, boolean succeed, final Callback<NetData<T>> callback) {
+        OkUtils utils = OkUtils.Holder.INSTANCE;
+        if (mFiltersHandler != null || utils.mFiltersHandler !=null) {
+            if (mFiltersHandler != null) {
+                // 继续向下
+                if (!mFiltersHandler.onHandle(data.getCode())) {
+                    if (succeed) {
+                        callback.onSucceed(data);
+                    } else {
+                        callback.onFailed(data.getMessage());
+                    }
+                }
+            } else {
+                // 继续向下
+                if (!utils.mFiltersHandler.onHandle(data.getCode())) {
+                    if (succeed) {
+                        callback.onSucceed(data);
+                    } else {
+                        callback.onFailed(data.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    private void showLoading() {
+        if (mLoading != null) {
+            OkUtils utils = OkUtils.Holder.INSTANCE;
+            if (utils.mLoadingColor == 0) {
+                utils.mLoadingColor = ContextCompat.getColor(
+                        OkGo.getInstance().getContext(), R.color.colorAccent);
+            }
+            mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
+            mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
+            mLoadingColor = mLoadingColor == 0 ? utils.mLoadingColor : mLoadingColor;
+            mLoading.text(mLoadingText)
+                    .size(mLoadingSize)
+                    .color(mLoadingColor)
+                    .dimEnable(mLoadingDimEnable)
+                    .show();
+        }
+    }
+
     private void dismissLoading() {
         if (mLoading != null && mLoading.isShowing()) {
             mLoading.dismiss();
         }
     }
-
 }

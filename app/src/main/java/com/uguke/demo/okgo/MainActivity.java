@@ -6,10 +6,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import com.lzy.okgo.OkGo;
 import com.lzy.okgo.model.Progress;
 import com.uguke.okgo.Callback;
+import com.uguke.okgo.FiltersHandler;
 import com.uguke.okgo.NetData;
-import com.uguke.okgo.OkHelper;
+import com.uguke.okgo.OkUtils;
 
 import java.io.File;
 
@@ -19,8 +21,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        OkHelper.init(getApplication())
-            .setCacheTime(1000);
+        OkUtils.init(getApplication());
         String json = "{" +
                 "resultcode:0," +
                 "message:\"你是杀手\","+
@@ -35,17 +36,33 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
+        OkGo.getInstance().setCacheTime(1000);
+        OkUtils.setSucceedCode(10);
+        OkUtils.setFiltersHandler(new FiltersHandler() {
+            @Override
+            public boolean onHandle(int code) {
+                Log.e("数据", "呵呵");
+                return true;
+            }
+        });
 
     }
 
     private void refresh() {
-        OkHelper.toObj()
+        OkUtils.toObj()
                 .get("http://211.149.191.242:8080/DApp/version/index/selectIndex")
+                .filters(200)
+//                .filtersHandler(new FiltersHandler() {
+//                    @Override
+//                    public boolean onHandle(int code) {
+//                        Log.e("数据", "呵呵2");
+//                        return true;
+//                    }
+//                })
                 .execute(new Callback<NetData<Object>>() {
                     @Override
                     public void onSucceed(NetData<Object> data) {
-
+                        Log.e("数据", "呵呵3");
                     }
 
                     @Override
@@ -57,7 +74,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void submit() {
 
-        OkHelper
+
+
+        OkUtils
                 // 返回NetBean<List<Object>>实体
                 .toFile()
                 .filters(true, 11111,1,1)
@@ -72,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 // 传参
                 //.params()
                 //.params()
+
                 .execute(new Callback<NetData<File>>() {
                     @Override
                     public void onSucceed(NetData<File> data) {
