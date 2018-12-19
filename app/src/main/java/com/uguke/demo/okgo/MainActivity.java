@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         OkHelper
                 // 返回NetBean<List<Object>>实体
                 .toFile()
+                .filters(true, 11111,1,1)
                 // Loading颜色
                 .loadingColor(Color.RED)
                 // 文字

@@ -42,6 +42,8 @@ public class OkRequest<T> {
     private Type mType;
     private Object mTag;
     private boolean mDownload;
+    /** 是否加在过滤规则中的数据以onSucceed()返回 **/
+    private boolean mToSucceed;
 
     private List<Integer> mFilters;
     private HttpMethod mMethod;
@@ -74,7 +76,7 @@ public class OkRequest<T> {
         mHeaders = new HttpHeaders();
         mStrategy = OkHelper.sStrategy.clone();
         mFilters = new LinkedList<>();
-        mFilters.add(OkHelper.sFailedCode);
+        mToSucceed = true;
     }
 
     public OkRequest<T> tag(Object tag) {
@@ -83,6 +85,15 @@ public class OkRequest<T> {
     }
 
     public OkRequest<T> filters(int... filters) {
+        mToSucceed = true;
+        for (int code : filters) {
+            mFilters.add(code);
+        }
+        return this;
+    }
+
+    public OkRequest<T> filters(boolean toSucceed, int... filters) {
+        mToSucceed = toSucceed;
         for (int code : filters) {
             mFilters.add(code);
         }
@@ -344,15 +355,27 @@ public class OkRequest<T> {
             public void onSuccess(Response<String> response) {
                 dismissLoading();
                 NetData<T> data = new Gson().fromJson(response.body(), mType);
-                if (mFilters != null) {
+                if (OkHelper.sSucceedCode == data.getCode()) {
+                    callback.onSucceed(data);
+                } else if (OkHelper.sFailedCode == data.getCode()) {
+                    callback.onFailed(data.getMessage());
+                } else {
                     for (int filter : mFilters) {
                         if (filter == data.getCode()) {
-                            callback.onFailed(data.getMessage());
+                            if (mToSucceed) {
+                                callback.onSucceed(data);
+                            } else {
+                                callback.onFailed(data.getMessage());
+                            }
                             return;
                         }
                     }
+                    if (mToSucceed) {
+                        callback.onFailed(data.getMessage());
+                    } else {
+                        callback.onSucceed(data);
+                    }
                 }
-                callback.onSucceed(data);
             }
 
             @Override

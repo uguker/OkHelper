@@ -14,7 +14,7 @@ allprojects {
 2. 添加依赖关系
 ```
 dependencies {
-	implementation 'com.github.uguker:okhelper:1.0.2'
+	implementation 'com.github.uguker:okhelper:1.0.3'
 }
 ```
 ## 简单使用

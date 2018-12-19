@@ -2,11 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://D:\Document\Android\okhelper\OkHelper.iml" filepath="D:\Document\Android\okhelper\OkHelper.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://D:\Document\Android\okhelper\app\app.iml" filepath="D:\Document\Android\okhelper\app\app.iml" />
       <module fileurl="file://$PROJECT_DIR$/library/library.iml" filepath="$PROJECT_DIR$/library/library.iml" />
-      <module fileurl="file://D:\Document\Android\okhelper\library\library.iml" filepath="D:\Document\Android\okhelper\library\library.iml" />
       <module fileurl="file://$PROJECT_DIR$/okhelper.iml" filepath="$PROJECT_DIR$/okhelper.iml" />
     </modules>
   </component>
