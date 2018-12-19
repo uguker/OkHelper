@@ -1,6 +1,6 @@
 # OkHelper
 OkGo二次封装，应用于简单日常接口调用。
-
+具体使用请查看Demo和源码
 ## 导入
 1. 在build.gradle添加如下代码：<br>
 ```
