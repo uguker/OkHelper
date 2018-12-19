@@ -29,6 +29,11 @@ dependencies {
 		    // .toObj(Object.class)
 		    // .toObj()
 		    // .toStr()
+		    // code为11111,1,2的数据将调用OnSucceed
+		    //.filters(11111,1,2)
+		    .filters(true, 11111,1,2)
+		    // code为11111,1,2的数据将调用OnFailed
+            //.filters(false, 11111,1,2)
 		    // 标签
 		    .tag(this)
 		    // 加上这句会显示Loading

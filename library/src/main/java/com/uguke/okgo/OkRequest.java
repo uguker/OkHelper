@@ -86,6 +86,7 @@ public class OkRequest<T> {
 
     public OkRequest<T> filters(int... filters) {
         mToSucceed = true;
+        mFilters.clear();
         for (int code : filters) {
             mFilters.add(code);
         }
@@ -94,6 +95,7 @@ public class OkRequest<T> {
 
     public OkRequest<T> filters(boolean toSucceed, int... filters) {
         mToSucceed = toSucceed;
+        mFilters.clear();
         for (int code : filters) {
             mFilters.add(code);
         }
