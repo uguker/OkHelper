@@ -10,10 +10,13 @@ import com.lzy.okgo.OkGo;
 import com.lzy.okgo.model.Progress;
 import com.uguke.okgo.Callback;
 import com.uguke.okgo.FiltersHandler;
+import com.uguke.okgo.HeadersHandler;
 import com.uguke.okgo.NetData;
 import com.uguke.okgo.OkUtils;
 
 import java.io.File;
+
+import okhttp3.Headers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,6 +49,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        OkUtils.setHeadersHandler(new HeadersHandler() {
+            @Override
+            public boolean onHandle(Headers headers) {
+                return false;
+            }
+        });
+
     }
 
     private void refresh() {
@@ -59,6 +69,12 @@ public class MainActivity extends AppCompatActivity {
 //                        return true;
 //                    }
 //                })
+                .headersHandler(new HeadersHandler() {
+                    @Override
+                    public boolean onHandle(Headers headers) {
+                        return false;
+                    }
+                })
                 .execute(new Callback<NetData<Object>>() {
                     @Override
                     public void onSucceed(NetData<Object> data) {
