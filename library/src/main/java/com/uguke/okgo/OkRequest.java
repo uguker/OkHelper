@@ -471,6 +471,8 @@ public class OkRequest<T> {
                     }
                 }
             }
+        } else {
+            callback.onFailed(data.getMessage());
         }
     }
 
