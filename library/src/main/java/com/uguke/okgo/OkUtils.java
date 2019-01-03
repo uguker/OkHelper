@@ -42,6 +42,7 @@ public class OkUtils {
         mSucceedCode = 200;
         mFailedCode = 101;
         mFailedText = "网络请求异常";
+        mLoadingSize = 60;
         mParams = new HttpParams();
     }
 

@@ -7,6 +7,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.view.Window;
 import android.view.WindowManager;
@@ -55,6 +56,9 @@ public class LoadingDialog extends Dialog {
     }
 
     public LoadingDialog color(@ColorInt int color) {
+        if (color == 0) {
+            color = ContextCompat.getColor(getContext(), R.color.colorAccent);
+        }
         DrawableCompat.setTint(mLoading.getIndeterminateDrawable(), color);
         return this;
     }

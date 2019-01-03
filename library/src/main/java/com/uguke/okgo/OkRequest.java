@@ -460,6 +460,8 @@ public class OkRequest<T> {
                     } else {
                         callback.onFailed(data.getMessage());
                     }
+                } else {
+                    dismissLoading();
                 }
             } else {
                 // 继续向下
@@ -469,10 +471,16 @@ public class OkRequest<T> {
                     } else {
                         callback.onFailed(data.getMessage());
                     }
+                } else {
+                    dismissLoading();
                 }
             }
         } else {
-            callback.onFailed(data.getMessage());
+            if (succeed) {
+                callback.onSucceed(data);
+            } else {
+                callback.onFailed(data.getMessage());
+            }
         }
     }
 
@@ -485,7 +493,6 @@ public class OkRequest<T> {
             }
             mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
             mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
-            mLoadingColor = mLoadingColor == 0 ? utils.mLoadingColor : mLoadingColor;
             mLoading.text(mLoadingText)
                     .size(mLoadingSize)
                     .color(mLoadingColor)
