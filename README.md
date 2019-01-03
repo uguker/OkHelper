@@ -14,7 +14,7 @@ allprojects {
 2. 添加依赖关系
 ```
 dependencies {
-	implementation 'com.github.uguker:okutils:1.0.5'
+	implementation 'com.github.uguker:okutils:1.0.6'
 }
 ```
 ## 简单使用
