@@ -5,7 +5,6 @@ import com.google.gson.annotations.SerializedName;
 /**
  * 功能描述：网络请求返回实体
  * @author  雷珏
- * @date    2018/06/14
  */
 public class NetData<T> {
 

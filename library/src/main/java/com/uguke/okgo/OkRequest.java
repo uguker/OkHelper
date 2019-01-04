@@ -420,11 +420,13 @@ public class OkRequest<T> {
                     if (mHeadersHandler != null) {
                         // 不继续向下
                         if (mHeadersHandler.onHandle(response.headers())) {
+                            callback.onFailed("");
                             return;
                         }
                     } else {
                         // 不继续向下
                         if (utils.mHeadersHandler.onHandle(response.headers())) {
+                            callback.onFailed("");
                             return;
                         }
                     }
@@ -462,7 +464,6 @@ public class OkRequest<T> {
                     }
                 } else {
                     dismissLoading();
-                    callback.onFailed("");
                 }
             } else {
                 // 继续向下
@@ -474,7 +475,6 @@ public class OkRequest<T> {
                     }
                 } else {
                     dismissLoading();
-                    callback.onFailed("");
                 }
             }
         } else {

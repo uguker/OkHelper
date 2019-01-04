@@ -5,7 +5,6 @@ import com.lzy.okgo.model.Progress;
 /**
  * 功能描述：网络请求回调
  * @author 雷珏
- * @date 2018/6/15
  * @param <T>
  */
 public abstract class Callback<T> {

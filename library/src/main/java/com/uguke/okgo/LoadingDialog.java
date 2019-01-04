@@ -17,7 +17,6 @@ import android.widget.TextView;
 /**
  * 功能描述：Loading对话框
  * @author LeiJue
- * @date 2018/9/25
  */
 public class LoadingDialog extends Dialog {
 
