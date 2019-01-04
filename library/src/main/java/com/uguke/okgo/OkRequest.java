@@ -462,6 +462,7 @@ public class OkRequest<T> {
                     }
                 } else {
                     dismissLoading();
+                    callback.onFailed("");
                 }
             } else {
                 // 继续向下
@@ -473,6 +474,7 @@ public class OkRequest<T> {
                     }
                 } else {
                     dismissLoading();
+                    callback.onFailed("");
                 }
             }
         } else {
