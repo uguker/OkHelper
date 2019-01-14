@@ -58,6 +58,7 @@ public class OkRequest<T> {
     private boolean mLoadingDimEnable;
     private LoadingDialog mLoading;
 
+    private Object mExtra;
     private FiltersHandler mFiltersHandler;
     private HeadersHandler mHeadersHandler;
 
@@ -104,6 +105,11 @@ public class OkRequest<T> {
         for (int code : filters) {
             mFilters.add(code);
         }
+        return this;
+    }
+
+    public OkRequest<T> extra(Object extra) {
+        mExtra = extra;
         return this;
     }
 
@@ -363,12 +369,12 @@ public class OkRequest<T> {
                 if (mHeadersHandler != null || utils.mHeadersHandler != null) {
                     if (mHeadersHandler != null) {
                         // 不继续向下
-                        if (mHeadersHandler.onHandle(response.headers())) {
+                        if (mHeadersHandler.onHandle(response.headers(), mExtra)) {
                             return;
                         }
                     } else {
                         // 不继续向下
-                        if (utils.mHeadersHandler.onHandle(response.headers())) {
+                        if (utils.mHeadersHandler.onHandle(response.headers(), mExtra)) {
                             return;
                         }
                     }
@@ -419,13 +425,13 @@ public class OkRequest<T> {
                 if (mHeadersHandler != null || utils.mHeadersHandler != null) {
                     if (mHeadersHandler != null) {
                         // 不继续向下
-                        if (mHeadersHandler.onHandle(response.headers())) {
+                        if (mHeadersHandler.onHandle(response.headers(), mExtra)) {
                             callback.onFailed("");
                             return;
                         }
                     } else {
                         // 不继续向下
-                        if (utils.mHeadersHandler.onHandle(response.headers())) {
+                        if (utils.mHeadersHandler.onHandle(response.headers(), mExtra)) {
                             callback.onFailed("");
                             return;
                         }
@@ -456,7 +462,7 @@ public class OkRequest<T> {
         if (mFiltersHandler != null || utils.mFiltersHandler !=null) {
             if (mFiltersHandler != null) {
                 // 继续向下
-                if (!mFiltersHandler.onHandle(data.getCode())) {
+                if (!mFiltersHandler.onHandle(data.getCode(), mExtra)) {
                     if (succeed) {
                         callback.onSucceed(data);
                     } else {
@@ -467,7 +473,7 @@ public class OkRequest<T> {
                 }
             } else {
                 // 继续向下
-                if (!utils.mFiltersHandler.onHandle(data.getCode())) {
+                if (!utils.mFiltersHandler.onHandle(data.getCode(), mExtra)) {
                     if (succeed) {
                         callback.onSucceed(data);
                     } else {

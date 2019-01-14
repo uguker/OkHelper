@@ -55,10 +55,11 @@ public class LoadingDialog extends Dialog {
     }
 
     public LoadingDialog color(@ColorInt int color) {
-        if (color == 0) {
-            color = ContextCompat.getColor(getContext(), R.color.colorAccent);
+        int temp = color;
+        if (color == Color.TRANSPARENT) {
+            temp = ContextCompat.getColor(getContext(), R.color.colorAccent);
         }
-        DrawableCompat.setTint(mLoading.getIndeterminateDrawable(), color);
+        DrawableCompat.setTint(mLoading.getIndeterminateDrawable(), temp);
         return this;
     }
 
@@ -80,4 +81,5 @@ public class LoadingDialog extends Dialog {
         mText.setPadding(0, (int) (size / 10 * density), 0, 0);
         return this;
     }
+
 }
