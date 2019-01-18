@@ -379,15 +379,22 @@ public class OkRequest<T> {
                         }
                     }
                 }
-                NetData<T> data = new Gson().fromJson(response.body(), mType);
-                // 如果有异常
+                NetData<T> data;
+                try {
+                    data = new Gson().fromJson(response.body(), mType);
+                } catch (IllegalStateException e) {
+                    data = new NetData<>();
+                    data.setCode(utils.mJsonErrorCode);
+                    data.setMessage(utils.mJsonErrorText);
+                }
                 if (data == null) {
                     return;
                 }
                 // 根据code回调
                 if (utils.mSucceedCode == data.getCode()) {
                     callback.onSucceed(data);
-                } else if (utils.mFailedCode == data.getCode()) {
+                } else if (utils.mFailedCode == data.getCode() ||
+                        utils.mJsonErrorCode == data.getCode()) {
                     callback.onFailed(data.getMessage());
                 } else {
                     for (int filter : mFilters) {

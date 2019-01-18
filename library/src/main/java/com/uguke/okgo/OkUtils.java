@@ -28,7 +28,9 @@ public class OkUtils {
 
     protected int mFailedCode;
     protected int mSucceedCode;
+    protected int mJsonErrorCode;
     protected String mFailedText;
+    protected String mJsonErrorText;
 
     protected HttpParams mParams;
     protected FiltersHandler mFiltersHandler;
@@ -41,6 +43,7 @@ public class OkUtils {
     private OkUtils() {
         mSucceedCode = 200;
         mFailedCode = 101;
+        mJsonErrorCode = 0;
         mFailedText = "网络请求异常";
         mLoadingSize = 60;
         mParams = new HttpParams();
@@ -70,12 +73,20 @@ public class OkUtils {
         Holder.INSTANCE.mFailedText = text;
     }
 
+    public static void setJsonErrorText(String text) {
+        Holder.INSTANCE.mJsonErrorText = text;
+    }
+
     public static void setFailedCode(int code) {
         Holder.INSTANCE.mFailedCode = code;
     }
 
     public static void setSucceedCode(int code) {
         Holder.INSTANCE.mSucceedCode = code;
+    }
+
+    public static void setJsonErrorCode(int code) {
+        Holder.INSTANCE.mJsonErrorCode = code;
     }
 
     public static void setHeadersHandler(HeadersHandler handler) {
