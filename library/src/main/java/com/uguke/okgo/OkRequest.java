@@ -6,6 +6,8 @@ import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.FileCallback;
 import com.lzy.okgo.callback.StringCallback;
@@ -382,7 +384,11 @@ public class OkRequest<T> {
                 NetData<T> data;
                 try {
                     data = new Gson().fromJson(response.body(), mType);
-                } catch (IllegalStateException e) {
+                } catch (JsonSyntaxException e){
+                    data = new NetData<>();
+                    data.setCode(utils.mJsonErrorCode);
+                    data.setMessage(utils.mJsonErrorText);
+                } catch (JsonIOException e) {
                     data = new NetData<>();
                     data.setCode(utils.mJsonErrorCode);
                     data.setMessage(utils.mJsonErrorText);
