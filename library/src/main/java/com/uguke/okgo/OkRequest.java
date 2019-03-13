@@ -399,8 +399,7 @@ public class OkRequest<T> {
                 // 根据code回调
                 if (utils.mSucceedCode == data.getCode()) {
                     callback.onSucceed(data);
-                } else if (utils.mFailedCode == data.getCode() ||
-                        utils.mJsonErrorCode == data.getCode()) {
+                } else if (utils.mFailedCode == data.getCode()) {
                     callback.onFailed(data.getMessage());
                 } else {
                     for (int filter : mFilters) {
