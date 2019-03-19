@@ -32,13 +32,11 @@ import java.util.Map;
 
 /**
  * 功能描述：请求包
- * @author  雷珏
- * @date    2018/06/14
+ * @author  LeiJue
  */
 public class OkRequest<T> {
 
     // OkGo请求相关
-
     private String mUrl;
     private String mUpJson;
     private Type mType;
@@ -502,6 +500,14 @@ public class OkRequest<T> {
                 callback.onFailed(data.getMessage());
             }
         }
+    }
+
+    private Object pretreatBody(Object body) {
+        PretreatHandler handler = OkUtils.Holder.INSTANCE.mPretreatHandler;
+        if (handler != null) {
+            return handler.onHandle(body);
+        }
+        return body;
     }
 
     private void showLoading() {

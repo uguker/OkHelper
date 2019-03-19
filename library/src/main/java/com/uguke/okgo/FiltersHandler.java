@@ -2,9 +2,7 @@ package com.uguke.okgo;
 
 /**
  * 功能描述：
- *
  * @author LeiJue
- * @date 2018/11/19
  */
 public interface FiltersHandler {
 

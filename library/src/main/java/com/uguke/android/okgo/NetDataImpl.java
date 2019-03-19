@@ -1,4 +1,4 @@
-package com.uguke.okgo;
+package com.uguke.android.okgo;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -6,7 +6,7 @@ import com.google.gson.annotations.SerializedName;
  * 功能描述：网络请求返回实体
  * @author  LeiJue
  */
-public class NetData<T> {
+public class NetDataImpl<T> implements NetData<T> {
 
     @SerializedName(
             value = "code",
@@ -23,6 +23,7 @@ public class NetData<T> {
             alternate = {"result"})
     private T data;
 
+    @Override
     public int getCode() {
         return code;
     }
@@ -39,12 +40,12 @@ public class NetData<T> {
         this.message = message;
     }
 
+    @Override
     public T getData() {
         return data;
     }
 
-    public NetData setData(T data) {
+    public void setData(T data) {
         this.data = data;
-        return this;
     }
 }

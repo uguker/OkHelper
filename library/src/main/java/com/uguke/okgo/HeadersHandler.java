@@ -6,7 +6,6 @@ import okhttp3.Headers;
  * 功能描述：
  *
  * @author LeiJue
- * @date 2018/11/19
  */
 public interface HeadersHandler {
     /**

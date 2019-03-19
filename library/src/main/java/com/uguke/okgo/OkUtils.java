@@ -16,8 +16,7 @@ import okhttp3.OkHttpClient;
 
 /**
  * 功能描述：OkGo辅助工具类
- * @author  雷珏
- * @date    2018/06/14
+ * @author  LeiJue
  */
 public class OkUtils {
 
@@ -35,6 +34,9 @@ public class OkUtils {
     protected HttpParams mParams;
     protected FiltersHandler mFiltersHandler;
     protected HeadersHandler mHeadersHandler;
+
+    /** 数据预处理器 **/
+    protected PretreatHandler mPretreatHandler;
 
     static class Holder {
         static final OkUtils INSTANCE = new OkUtils();
