@@ -1,4 +1,4 @@
-package com.uguke.okgo;
+package com.uguke.android.okgo;
 
 import okhttp3.Headers;
 

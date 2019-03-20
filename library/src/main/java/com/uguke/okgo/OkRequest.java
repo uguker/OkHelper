@@ -22,6 +22,10 @@ import com.lzy.okgo.request.PatchRequest;
 import com.lzy.okgo.request.PostRequest;
 import com.lzy.okgo.request.PutRequest;
 import com.lzy.okgo.request.base.Request;
+import com.uguke.android.okgo.FiltersHandler;
+import com.uguke.android.okgo.HeadersHandler;
+import com.uguke.android.okgo.LoadingDialog;
+import com.uguke.android.okgo.OkUtils;
 import com.uguke.reflect.TypeBuilder;
 
 import java.io.File;
@@ -364,50 +368,50 @@ public class OkRequest<T> {
             public void onSuccess(Response<String> response) {
                 // 如果需要，取消对话框
                 dismissLoading();
-                OkUtils utils = OkUtils.Holder.INSTANCE;
-                // 如果设置了Headers处理器
-                if (mHeadersHandler != null || utils.mHeadersHandler != null) {
-                    if (mHeadersHandler != null) {
-                        // 不继续向下
-                        if (mHeadersHandler.onHandle(response.headers(), mExtra)) {
-                            return;
-                        }
-                    } else {
-                        // 不继续向下
-                        if (utils.mHeadersHandler.onHandle(response.headers(), mExtra)) {
-                            return;
-                        }
-                    }
-                }
+//                OkUtils utils = OkUtils.Holder.INSTANCE;
+//                // 如果设置了Headers处理器
+//                if (mHeadersHandler != null || utils.mHeadersHandler != null) {
+//                    if (mHeadersHandler != null) {
+//                        // 不继续向下
+//                        if (mHeadersHandler.onHandle(response.headers(), mExtra)) {
+//                            return;
+//                        }
+//                    } else {
+//                        // 不继续向下
+//                        if (utils.mHeadersHandler.onHandle(response.headers(), mExtra)) {
+//                            return;
+//                        }
+//                    }
+//                }
                 NetData<T> data;
                 try {
                     data = new Gson().fromJson(response.body(), mType);
                 } catch (JsonSyntaxException e){
                     data = new NetData<>();
-                    data.setCode(utils.mJsonErrorCode);
-                    data.setMessage(utils.mJsonErrorText);
+                    //data.setCode(utils.mJsonErrorCode);
+                    //data.setMessage(utils.mJsonErrorText);
                 } catch (JsonIOException e) {
                     data = new NetData<>();
-                    data.setCode(utils.mJsonErrorCode);
-                    data.setMessage(utils.mJsonErrorText);
+                    //data.setCode(utils.mJsonErrorCode);
+                    //data.setMessage(utils.mJsonErrorText);
                 }
                 if (data == null) {
                     return;
                 }
                 // 根据code回调
-                if (utils.mSucceedCode == data.getCode()) {
-                    callback.onSucceed(data);
-                } else if (utils.mFailedCode == data.getCode()) {
-                    callback.onFailed(data.getMessage());
-                } else {
-                    for (int filter : mFilters) {
-                        if (filter == data.getCode()) {
-                            handleFilters(data, mToSucceed, callback);
-                            return;
-                        }
-                    }
-                    handleFilters(data, !mToSucceed, callback);
-                }
+//                if (utils.mSucceedCode == data.getCode()) {
+//                    callback.onSucceed(data);
+//                } else if (utils.mFailedCode == data.getCode()) {
+//                    callback.onFailed(data.getMessage());
+//                } else {
+//                    for (int filter : mFilters) {
+//                        if (filter == data.getCode()) {
+//                            handleFilters(data, mToSucceed, callback);
+//                            return;
+//                        }
+//                    }
+//                    handleFilters(data, !mToSucceed, callback);
+//                }
             }
 
             @Override
@@ -420,43 +424,43 @@ public class OkRequest<T> {
             public void onError(Response<String> response) {
                 super.onError(response);
                 dismissLoading();
-                callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
+                //callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
             }
         });
     }
 
-    @SuppressWarnings("unchecked")
+
     private void execute2(final Request<File, ?> request, final Callback<NetData<T>> callback) {
         request.execute(new FileCallback() {
             @Override
             public void onSuccess(Response<File> response) {
-                OkUtils utils = OkUtils.Holder.INSTANCE;
-                // 如果设置了Headers处理器
-                if (mHeadersHandler != null || utils.mHeadersHandler != null) {
-                    if (mHeadersHandler != null) {
-                        // 不继续向下
-                        if (mHeadersHandler.onHandle(response.headers(), mExtra)) {
-                            callback.onFailed("");
-                            return;
-                        }
-                    } else {
-                        // 不继续向下
-                        if (utils.mHeadersHandler.onHandle(response.headers(), mExtra)) {
-                            callback.onFailed("");
-                            return;
-                        }
-                    }
-                }
-                NetData<File> data = new NetData<>();
-                data.setCode(OkUtils.Holder.INSTANCE.mSucceedCode);
-                data.setData(response.body());
-                callback.onSucceed((NetData<T>) data);
+//                OkUtils utils = OkUtils.Holder.INSTANCE;
+//                // 如果设置了Headers处理器
+//                if (mHeadersHandler != null || utils.mHeadersHandler != null) {
+//                    if (mHeadersHandler != null) {
+//                        // 不继续向下
+//                        if (mHeadersHandler.onHandle(response.headers(), mExtra)) {
+//                            callback.onFailed("");
+//                            return;
+//                        }
+//                    } else {
+//                        // 不继续向下
+//                        if (utils.mHeadersHandler.onHandle(response.headers(), mExtra)) {
+//                            callback.onFailed("");
+//                            return;
+//                        }
+//                    }
+//                }
+//                NetData<File> data = new NetData<>();
+//                data.setCode(OkUtils.Holder.INSTANCE.mSucceedCode);
+//                data.setData(response.body());
+//                callback.onSucceed((NetData<T>) data);
             }
 
             @Override
             public void onError(Response<File> response) {
                 super.onError(response);
-                callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
+                //callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
             }
 
             @Override
@@ -468,63 +472,63 @@ public class OkRequest<T> {
     }
 
     private void handleFilters(NetData<T> data, boolean succeed, final Callback<NetData<T>> callback) {
-        OkUtils utils = OkUtils.Holder.INSTANCE;
-        if (mFiltersHandler != null || utils.mFiltersHandler !=null) {
-            if (mFiltersHandler != null) {
-                // 继续向下
-                if (!mFiltersHandler.onHandle(data.getCode(), mExtra)) {
-                    if (succeed) {
-                        callback.onSucceed(data);
-                    } else {
-                        callback.onFailed(data.getMessage());
-                    }
-                } else {
-                    dismissLoading();
-                }
-            } else {
-                // 继续向下
-                if (!utils.mFiltersHandler.onHandle(data.getCode(), mExtra)) {
-                    if (succeed) {
-                        callback.onSucceed(data);
-                    } else {
-                        callback.onFailed(data.getMessage());
-                    }
-                } else {
-                    dismissLoading();
-                }
-            }
-        } else {
-            if (succeed) {
-                callback.onSucceed(data);
-            } else {
-                callback.onFailed(data.getMessage());
-            }
-        }
+//        OkUtils utils = OkUtils.Holder.INSTANCE;
+//        if (mFiltersHandler != null || utils.mFiltersHandler !=null) {
+//            if (mFiltersHandler != null) {
+//                // 继续向下
+//                if (!mFiltersHandler.onHandle(data.getCode(), mExtra)) {
+//                    if (succeed) {
+//                        callback.onSucceed(data);
+//                    } else {
+//                        callback.onFailed(data.getMessage());
+//                    }
+//                } else {
+//                    dismissLoading();
+//                }
+//            } else {
+//                // 继续向下
+//                if (!utils.mFiltersHandler.onHandle(data.getCode(), mExtra)) {
+//                    if (succeed) {
+//                        callback.onSucceed(data);
+//                    } else {
+//                        callback.onFailed(data.getMessage());
+//                    }
+//                } else {
+//                    dismissLoading();
+//                }
+//            }
+//        } else {
+//            if (succeed) {
+//                callback.onSucceed(data);
+//            } else {
+//                callback.onFailed(data.getMessage());
+//            }
+//        }
     }
 
     private Object pretreatBody(Object body) {
-        PretreatHandler handler = OkUtils.Holder.INSTANCE.mPretreatHandler;
-        if (handler != null) {
-            return handler.onHandle(body);
-        }
+        //PretreatHandler handler = OkUtils.Holder.INSTANCE.mPretreatHandler;
+//        if (handler != null) {
+//            return handler.onHandle(body);
+//        }
         return body;
     }
 
     private void showLoading() {
-        if (mLoading != null) {
-            OkUtils utils = OkUtils.Holder.INSTANCE;
-            if (utils.mLoadingColor == 0) {
-                utils.mLoadingColor = ContextCompat.getColor(
-                        OkGo.getInstance().getContext(), R.color.colorAccent);
-            }
-            mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
-            mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
-            mLoading.text(mLoadingText)
-                    .size(mLoadingSize)
-                    .color(mLoadingColor)
-                    .dimEnable(mLoadingDimEnable)
-                    .show();
-        }
+//        if (mLoading != null) {
+//            OkUtils utils = OkUtils.Holder.INSTANCE;
+//            if (utils.mLoadingColor == 0) {
+//                utils.mLoadingColor = ContextCompat.getColor(
+//                        OkGo.getInstance().getContext(), R.color.colorAccent);
+//            }
+//            mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
+//            mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
+//            mLoading.text(mLoadingText)
+//                    .size(mLoadingSize)
+//                    .color(mLoadingColor)
+//                    .dimEnable(mLoadingDimEnable)
+//                    .show();
+//        }
     }
 
     private void dismissLoading() {

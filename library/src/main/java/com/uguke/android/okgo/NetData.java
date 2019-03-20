@@ -5,7 +5,9 @@ package com.uguke.android.okgo;
  */
 public interface NetData<T> {
 
+    T getData();
+
     int getCode();
 
-    T getData();
+    String getMessage();
 }

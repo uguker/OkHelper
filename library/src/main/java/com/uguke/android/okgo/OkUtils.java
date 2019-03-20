@@ -1,4 +1,4 @@
-package com.uguke.okgo;
+package com.uguke.android.okgo;
 
 import android.app.Application;
 import android.support.annotation.ColorInt;
@@ -8,6 +8,7 @@ import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
+import com.uguke.okgo.PretreatHandler;
 
 import java.io.File;
 import java.util.List;
@@ -35,6 +36,7 @@ public class OkUtils {
     protected FiltersHandler mFiltersHandler;
     protected HeadersHandler mHeadersHandler;
 
+    private Class<?> mNetDataImplClass;
     /** 数据预处理器 **/
     protected PretreatHandler mPretreatHandler;
 
@@ -53,6 +55,10 @@ public class OkUtils {
 
     public static void init(Application app) {
         OkGo.getInstance().init(app);
+    }
+
+    public static void setNetDataImplClass(Class<? extends NetData> clazz) {
+        Holder.INSTANCE.mNetDataImplClass = clazz;
     }
 
     public static void setLoadingColor(@ColorInt int color) {
@@ -99,27 +105,29 @@ public class OkUtils {
         Holder.INSTANCE.mFiltersHandler = handler;
     }
 
-    public static <T> OkRequest<T> toObj(Class<T> clazz) {
-        return new OkRequest<>(clazz, false);
+    public static <T> OkRequest<T> toObj(Object obj, Class<T> clazz) {
+        return new OkRequest<>(obj, clazz, OkRequest.TYPE_NET_OBJECT);
     }
 
-    public static <T> OkRequest<T> toObj() {
-        return new OkRequest<>(Object.class, false);
+    public static <T> OkRequest<T> toObj(Object obj) {
+        return new OkRequest<>(obj, Object.class, OkRequest.TYPE_NET_OBJECT);
     }
 
-    public static <T> OkRequest<T> toStr() {
-        return new OkRequest<>(String.class, false);
+    public static <T> OkRequest<T> toStr(Object obj) {
+        return new OkRequest<>(obj, String.class, OkRequest.TYPE_NET_OBJECT);
     }
 
-    public static OkRequest<File> toFile() {
-        return new OkRequest<>(File.class, false);
+    public static <T> OkRequest<File> toFile(Object obj) {
+        return new OkRequest<>(obj, File.class, OkRequest.TYPE_FILE);
     }
 
-    public static <T> OkRequest<List<T>> toList(Class<T> clazz) {
-        return new OkRequest<>(clazz, true);
+    public static <T> OkRequest<List<T>> toList(Object obj, Class<T> clazz) {
+        return new OkRequest<>(obj, clazz, OkRequest.TYPE_FILE);
     }
 
-    // ---------- OkGo方法 ------------//
+    //================================================//
+    //=================OkGo自带方法===================//
+    //================================================//
 
     public static void addCommonParams(HttpParams commonParams) {
         OkGo.getInstance().addCommonParams(commonParams);

@@ -1,4 +1,4 @@
-package com.uguke.okgo;
+package com.uguke.android.okgo;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -13,6 +13,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.uguke.okgo.R;
 
 /**
  * 功能描述：Loading对话框

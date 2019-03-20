@@ -32,6 +32,7 @@ public class NetDataImpl<T> implements NetData<T> {
         this.code = code;
     }
 
+    @Override
     public String getMessage() {
         return message;
     }
