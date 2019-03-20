@@ -86,11 +86,11 @@ public class OkUtils {
     }
 
     public static void setFailedCode(int code) {
-        Holder.INSTANCE.mFailedCode = code;
+        OkRequest.sFailedCode = code;
     }
 
     public static void setSucceedCode(int code) {
-        Holder.INSTANCE.mSucceedCode = code;
+        OkRequest.sSucceedCode = code;
     }
 
     public static void setJsonErrorCode(int code) {

@@ -1,6 +1,10 @@
 package com.uguke.android.okgo;
 
+import android.content.Context;
+import android.graphics.Color;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
@@ -16,9 +20,7 @@ import com.lzy.okgo.request.PatchRequest;
 import com.lzy.okgo.request.PostRequest;
 import com.lzy.okgo.request.PutRequest;
 import com.lzy.okgo.request.base.Request;
-import com.uguke.android.okgo.Callback;
-import com.uguke.android.okgo.LoadingDialog;
-import com.uguke.android.okgo.NetData;
+import com.uguke.okgo.R;
 import com.uguke.reflect.TypeBuilder;
 
 import java.io.File;
@@ -31,6 +33,10 @@ import java.util.Map;
 
 import okhttp3.Headers;
 
+/**
+ * 功能描述：OkUtils网络请求
+ * @author LeiJue
+ */
 public class OkRequest<T> {
 
     /** NetData内嵌Object **/
@@ -42,6 +48,16 @@ public class OkRequest<T> {
     /** String数据 **/
     static final int TYPE_FILE = 3;
     // OkGo请求相关
+
+    static int sSucceedCode = 200;
+    static int sFailedCode = 300;
+
+    /** 全局过滤器 **/
+    static FiltersHandler sFiltersHandler;
+    /** 全局请求头处理器 **/
+    static HeadersHandler sHeadersHandler;
+    /** 全局预处理器 **/
+    static PretreatHandler sPretreaHandler;
 
     private String mUrl;
     private String mUpJson;
@@ -57,6 +73,7 @@ public class OkRequest<T> {
     private HttpParams mParams;
     private HttpHeaders mHeaders;
 
+    private Class<?> mDataClass;
 
     private int mRequestType;
     // Loading对话框相关
@@ -68,6 +85,8 @@ public class OkRequest<T> {
     private LoadingDialog mLoading;
 
     private Object mExtra;
+    /** 刷新控件 **/
+    private Object mRefresher;
     private FiltersHandler mFiltersHandler;
     private HeadersHandler mHeadersHandler;
 
@@ -76,6 +95,7 @@ public class OkRequest<T> {
 
     OkRequest(Object obj, Class<?> clazz, int type) {
         mRequestType = type;
+        mDataClass = clazz;
         mReference = new WeakReference<>(obj);
         switch (type) {
             case TYPE_NET_OBJECT:
@@ -312,12 +332,72 @@ public class OkRequest<T> {
         executeForNet(request, callback);
     }
 
+    public OkRequest<T> loading(Context context) {
+        mLoading = new LoadingDialog(context);
+        mLoading.color(Color.RED);
+        return this;
+    }
+
+
     private void executeForFile(final Request<File, ?> request, final Callback<NetData<T>> callback) {
 
     }
 
     private void executeForNet(final Request<String, ?> request, final Callback<NetData<T>> callback) {
+        request.execute(new StringCallback() {
 
+            @Override
+            public void onSuccess(Response<String> response) {
+                String message = response.message();
+                int code = response.code();
+
+                // 如果需要，取消对话框
+                dismissLoading();
+                String body = response.body();
+                Headers headers = response.headers();
+                // 如果处理Headers进行了拦截
+                if (handleHeaders(headers)) {
+                    callback.onFailed("");
+                    return;
+                }
+                NetData<T> data;
+                try {
+                    data = new Gson().fromJson(response.body(), mType);
+                } catch (JsonParseException e) {
+                    // Json数据错误
+                    callback.onFailed(mDataClass.getSimpleName() + "数据格式不正确");
+                    return;
+                }
+
+
+            }
+
+            @Override
+            public void onStart(Request<String, ? extends Request> request) {
+                super.onStart(request);
+                showLoading();
+            }
+
+            @Override
+            public void onError(Response<String> response) {
+                super.onError(response);
+                dismissLoading();
+                int code = response.code();
+                switch (code) {
+                    case -1:
+                        callback.onFailed("无网络");
+                        break;
+                    default:
+                }
+                String body = response.body();
+                String message = response.message();
+
+
+                Log.e("数据", "body:" + body);
+                Log.e("数据", "message:" + message);
+                Log.e("数据", "code:" + code);
+            }
+        });
     }
 
     private void executeForString(final Request<String, ?> request, final Callback<NetData<T>> callback) {
@@ -328,7 +408,6 @@ public class OkRequest<T> {
                 dismissLoading();
                 String body = response.body();
                 Headers headers = response.headers();
-
                 // 如果处理Headers进行了拦截
                 if (handleHeaders(headers)) {
                     callback.onFailed("");
@@ -356,7 +435,7 @@ public class OkRequest<T> {
                     data = new Gson().fromJson(response.body(), mType);
                 } catch (JsonParseException e) {
                     // Json数据错误
-                    data = null;
+                    data = NetDataUtils.createJsonFailedData();
                 }
             }
 
@@ -377,16 +456,32 @@ public class OkRequest<T> {
     }
 
     private boolean handleHeaders(Headers headers) {
-        OkUtils utils = OkUtils.Holder.INSTANCE;
         // 如果设置了Headers处理器
-        if (mHeadersHandler != null || utils.mHeadersHandler != null) {
+        if (mHeadersHandler != null || sHeadersHandler != null) {
             if (mHeadersHandler != null) {
-                // 不继续向下
-                return mHeadersHandler.onHandle(headers, mExtra);
+                return mHeadersHandler.onHandle(headers, mRefresher);
             } else {
-                // 不继续向下
-                return utils.mHeadersHandler.onHandle(headers, mExtra);
+                return sHeadersHandler.onHandle(headers, mRefresher);
             }
+        }
+        return false;
+    }
+
+    private boolean filterNetData(NetData<T> netData) {
+         // 根据code回调
+        if (sSucceedCode == netData.getCode()) {
+            //callback.onFailed(data.getMessage());
+            return true;
+        } else if (sFailedCode == netData.getCode()) {
+            //callback.onFailed(data.getMessage());
+        } else {
+            for (int filter : mFilters) {
+                if (filter == netData.getCode()) {
+                    //handleFilters(data, mToSucceed, callback);
+                    return false;
+                }
+            }
+            //handleFilters(data, !mToSucceed, callback);
         }
         return false;
     }
@@ -401,10 +496,25 @@ public class OkRequest<T> {
 
 
     private void showLoading() {
-
+        if (mLoading != null) {
+            OkUtils utils = OkUtils.Holder.INSTANCE;
+            if (utils.mLoadingColor == 0) {
+                utils.mLoadingColor = ContextCompat.getColor(
+                        OkGo.getInstance().getContext(), R.color.colorAccent);
+            }
+            mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
+            mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
+            mLoading.text(mLoadingText)
+                    //.size(mLoadingSize)
+                    //.color(mLoadingColor)
+                    .dimEnable(mLoadingDimEnable)
+                    .show();
+        }
     }
 
     private void dismissLoading() {
-        
+        if (mLoading != null && mLoading.isShowing()) {
+            mLoading.dismiss();
+        }
     }
 }

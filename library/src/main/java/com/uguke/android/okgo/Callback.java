@@ -8,7 +8,6 @@ import com.lzy.okgo.model.Progress;
  * @param <T>
  */
 public abstract class Callback<T> {
-
     /**
      * 功能描述：请求成功回调
      * @param data     返回实例

@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.lzy.okgo.OkGo;
 
@@ -54,7 +55,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void refresh() {
         OkUtils.toObj(this)
-                .get("http://211.149.191.242:8080/DApp/version/index/selectIndex")
+                //.get("http://211.149.191.242:8080/DApp/version/index/selectIndex")
+                .get("https://www.baidu.com")
+                .loading(this)
 //                .filters(200)
 //                .filtersHandler(new FiltersHandler() {
 //                    @Override
@@ -77,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailed(String msg) {
-
+                        Toast.makeText(getApplicationContext(), msg, 1500).show();
                     }
                 });
     }
