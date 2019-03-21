@@ -5,21 +5,24 @@ import android.graphics.Color;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.lzy.okgo.OkGo;
+import com.lzy.okgo.callback.FileCallback;
 import com.lzy.okgo.callback.StringCallback;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpMethod;
 import com.lzy.okgo.model.HttpParams;
-import com.lzy.okgo.model.Response;
-import com.lzy.okgo.request.DeleteRequest;
-import com.lzy.okgo.request.OptionsRequest;
-import com.lzy.okgo.request.PatchRequest;
-import com.lzy.okgo.request.PostRequest;
-import com.lzy.okgo.request.PutRequest;
+import com.lzy.okgo.model.Progress;
+
+import com.lzy.okgo.request.base.BodyRequest;
 import com.lzy.okgo.request.base.Request;
+import com.uguke.android.okgo.handler.FiltersHandler;
+import com.uguke.android.okgo.handler.HeadersHandler;
+import com.uguke.android.okgo.handler.PretreatHandler;
+import com.uguke.okgo.NetData;
 import com.uguke.okgo.R;
 import com.uguke.reflect.TypeBuilder;
 
@@ -39,6 +42,8 @@ import okhttp3.Headers;
  */
 public class OkRequest<T> {
 
+    static final String JSON_PARSE_EXCEPTION = "Json数据解析异常";
+
     /** NetData内嵌Object **/
     static final int TYPE_NET_OBJECT = 0;
     /** NetData内嵌List **/
@@ -49,33 +54,32 @@ public class OkRequest<T> {
     static final int TYPE_FILE = 3;
     // OkGo请求相关
 
-    static int sSucceedCode = 200;
-    static int sFailedCode = 300;
+    static int defaultSucceedCode = 200;
+    static int defaultFailedCode = 300;
 
     /** 全局过滤器 **/
-    static FiltersHandler sFiltersHandler;
+    static FiltersHandler defaultFiltersHandler;
     /** 全局请求头处理器 **/
-    static HeadersHandler sHeadersHandler;
+    static HeadersHandler defaultHeadersHandler;
     /** 全局预处理器 **/
-    static PretreatHandler sPretreaHandler;
+    static PretreatHandler defaultPretreatHandler;
 
-    private String mUrl;
+    private String requestUrl;
     private String mUpJson;
-    /** 网络请求返回实体的Class **/
-    private Type mType;
+
     private Object mTag;
     private boolean mDownload;
     /** 是否加在过滤规则中的数据以onSucceed()返回 **/
     private boolean mToSucceed;
 
-    private List<Integer> mFilters;
-    private HttpMethod mMethod;
-    private HttpParams mParams;
-    private HttpHeaders mHeaders;
+    private HttpMethod httpMethod;
+    private HttpParams httpParams;
+    private HttpHeaders httpHeaders;
+    
+    private Type responseType;
+    private Class<?> responseDataClass;
 
-    private Class<?> mDataClass;
-
-    private int mRequestType;
+    private int requestType;
     // Loading对话框相关
 
     private int mLoadingColor;
@@ -83,44 +87,47 @@ public class OkRequest<T> {
     private String mLoadingText;
     private boolean mLoadingDimEnable;
     private LoadingDialog mLoading;
-
-    private Object mExtra;
     /** 刷新控件 **/
-    private Object mRefresher;
-    private FiltersHandler mFiltersHandler;
-    private HeadersHandler mHeadersHandler;
+    private Object refresher;
+
+    private SparseBooleanArray responseCodes;
+    private FiltersHandler filtersHandler;
+    private HeadersHandler headersHandler;
+    private PretreatHandler pretreatHandler;
 
     /** 用来防止空指针 **/
-    private Reference<Object> mReference;
+    private Reference<Object> reference;
 
     OkRequest(Object obj, Class<?> clazz, int type) {
-        mRequestType = type;
-        mDataClass = clazz;
-        mReference = new WeakReference<>(obj);
+        requestType = type;
+        responseDataClass = clazz;
+        reference = new WeakReference<>(obj);
         switch (type) {
             case TYPE_NET_OBJECT:
-                mType = TypeBuilder.newInstance(NetDataImpl.class)
+                responseType = TypeBuilder.newInstance(ResponseImpl.class)
                         .addTypeParam(clazz)
                         .build();
                 break;
             case TYPE_NET_LIST:
-                mType =  TypeBuilder.newInstance(NetDataImpl.class)
+                responseType =  TypeBuilder.newInstance(ResponseImpl.class)
                         .beginSubType(List.class)
                         .addTypeParam(clazz)
                         .endSubType()
                         .build();
                 break;
             case TYPE_STRING:
-                mType = TypeBuilder.newInstance(String.class).build();
+                responseType = TypeBuilder.newInstance(String.class).build();
                 break;
             case TYPE_FILE:
-                mType = TypeBuilder.newInstance(File.class).build();
+                responseType = TypeBuilder.newInstance(File.class).build();
                 break;
             default:
         }
-        mParams = new HttpParams();
-        mHeaders = new HttpHeaders();
-        mFilters = new LinkedList<>();
+        httpParams = new HttpParams();
+        httpHeaders = new HttpHeaders();
+        responseCodes = new SparseBooleanArray();
+        responseCodes.put(defaultSucceedCode, true);
+        responseCodes.put(defaultFailedCode, false);
     }
 
     //================================================//
@@ -128,50 +135,50 @@ public class OkRequest<T> {
     //================================================//
 
     public OkRequest<T> get(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.GET;
+        requestUrl = url;
+        httpMethod = HttpMethod.GET;
         return this;
     }
 
     public OkRequest<T> post(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.POST;
+        requestUrl = url;
+        httpMethod = HttpMethod.POST;
         return this;
     }
 
     public OkRequest<T> put(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.PUT;
+        requestUrl = url;
+        httpMethod = HttpMethod.PUT;
         return this;
     }
 
     public OkRequest<T> delete(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.DELETE;
+        requestUrl = url;
+        httpMethod = HttpMethod.DELETE;
         return this;
     }
 
     public OkRequest<T> head(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.HEAD;
+        requestUrl = url;
+        httpMethod = HttpMethod.HEAD;
         return this;
     }
 
     public OkRequest<T> patch(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.PATCH;
+        requestUrl = url;
+        httpMethod = HttpMethod.PATCH;
         return this;
     }
 
     public OkRequest<T> options(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.OPTIONS;
+        requestUrl = url;
+        httpMethod = HttpMethod.OPTIONS;
         return this;
     }
 
     public OkRequest<T> trace(String url) {
-        mUrl = url;
-        mMethod = HttpMethod.TRACE;
+        requestUrl = url;
+        httpMethod = HttpMethod.TRACE;
         return this;
     }
 
@@ -186,149 +193,148 @@ public class OkRequest<T> {
     //================================================//
 
     public OkRequest<T> params(String key, String value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, int value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, float value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, double value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, long value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, char value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, boolean value, boolean... replace) {
-        mParams.put(key, value, replace);
+        httpParams.put(key, value, replace);
         return this;
     }
 
     public OkRequest<T> params(Map<String, String> params, boolean... replace) {
-        mParams.put(params, replace);
+        httpParams.put(params, replace);
         return this;
     }
 
     public OkRequest<T> params(String key, File file) {
-        mParams.put(key, file);
+        httpParams.put(key, file);
         return this;
     }
 
     public OkRequest<T> params(String key, List<File> files) {
-        mParams.putFileParams(key, files);
+        httpParams.putFileParams(key, files);
         return this;
     }
 
     public OkRequest<T> paramsWrapper(String key, HttpParams.FileWrapper fileWrapper) {
-        mParams.put(key, fileWrapper);
+        httpParams.put(key, fileWrapper);
         return this;
     }
 
     public OkRequest<T> paramsWrapper(String key, List<HttpParams.FileWrapper> fileWrappers) {
-        mParams.putFileWrapperParams(key, fileWrappers);
+        httpParams.putFileWrapperParams(key, fileWrappers);
         return this;
     }
 
     public OkRequest<T> addUrlParams(String key, List<String> values) {
-        mParams.putUrlParams(key, values);
+        httpParams.putUrlParams(key, values);
         return this;
     }
 
     public OkRequest<T> removeParam(String key) {
-        mParams.remove(key);
+        httpParams.remove(key);
         return this;
     }
 
     public OkRequest<T> removeAllParams() {
-        mParams.clear();
+        httpParams.clear();
         return this;
     }
 
-    public void execute(Callback<NetData<T>> callback) {
+    public OkRequest<T> setHeadersHandler(HeadersHandler handler) {
+        headersHandler = handler;
+        return this;
+    }
+
+    public OkRequest<T> setFiltersHandler(FiltersHandler handler) {
+        filtersHandler = handler;
+        return this;
+    }
+
+    public OkRequest<T> setPretreatHandler(PretreatHandler handler) {
+        pretreatHandler = handler;
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public void execute(Callback<Response<T>> callback) {
         // 如果是请求字符串
-        if (mRequestType == TYPE_STRING) {
-            Request<String, ?> request = OkGo.get(mUrl);
+        if (requestType == TYPE_STRING) {
+            Request request = OkGo.get(requestUrl);
             request.tag(mTag);
-            request.params(mParams);
-            request.headers(mHeaders);
+            request.params(httpParams);
+            request.headers(httpHeaders);
             executeForString(request, callback);
             return;
         }
         // 如果是请求文件
-        if (mRequestType == TYPE_FILE) {
-            Request<File, ?> request = OkGo.get(mUrl);
+        if (requestType == TYPE_FILE) {
+            Request<File, ?> request = OkGo.get(requestUrl);
             request.tag(mTag);
-            request.params(mParams);
-            request.headers(mHeaders);
+            request.params(httpParams);
+            request.headers(httpHeaders);
             executeForFile(request, callback);
             return;
         }
         // 其他正常网络请求
         Request<String, ?> request;
-        switch (mMethod) {
+        switch (httpMethod) {
             case POST:
-                PostRequest<String> postRequest = OkGo.post(mUrl);
-                if (!TextUtils.isEmpty(mUpJson)) {
-                    postRequest.upJson(mUpJson);
-                }
-                request = postRequest;
+                request = OkGo.post(requestUrl);
                 break;
             case PUT:
-                PutRequest<String> putRequest = OkGo.put(mUrl);
-                if (!TextUtils.isEmpty(mUpJson)) {
-                    putRequest.upJson(mUpJson);
-                }
-                request = putRequest;
+                request = OkGo.put(requestUrl);
                 break;
             case DELETE:
-                DeleteRequest<String> deleteRequest = OkGo.delete(mUrl);
-                if (!TextUtils.isEmpty(mUpJson)) {
-                    deleteRequest.upJson(mUpJson);
-                }
-                request = deleteRequest;
+                request = OkGo.delete(requestUrl);
                 break;
             case HEAD:
-                request = OkGo.head(mUrl);
+                request = OkGo.head(requestUrl);
                 break;
             case PATCH:
-                PatchRequest<String> patchRequest = OkGo.patch(mUrl);
-                if (!TextUtils.isEmpty(mUpJson)) {
-                    patchRequest.upJson(mUpJson);
-                }
-                request = patchRequest;
+                request = OkGo.patch(requestUrl);
                 break;
             case OPTIONS:
-                OptionsRequest<String> optionsRequest = OkGo.options(mUrl);
-                if (!TextUtils.isEmpty(mUpJson)) {
-                    optionsRequest.upJson(mUpJson);
-                }
-                request = optionsRequest;
+                request = OkGo.options(requestUrl);
                 break;
             case TRACE:
-                request = OkGo.trace(mUrl);
+                request = OkGo.trace(requestUrl);
                 break;
             default:
-                request = OkGo.get(mUrl);
+                request = OkGo.get(requestUrl);
+        }
+        if (!TextUtils.isEmpty(mUpJson) && request instanceof BodyRequest) {
+            ((BodyRequest<String, BodyRequest>) request).upJson(mUpJson);
         }
         request.tag(mTag);
-        request.params(mParams);
-        request.headers(mHeaders);
+        request.params(httpParams);
+        request.headers(httpHeaders);
         executeForNet(request, callback);
     }
 
@@ -338,79 +344,104 @@ public class OkRequest<T> {
         return this;
     }
 
-
-    private void executeForFile(final Request<File, ?> request, final Callback<NetData<T>> callback) {
-
-    }
-
-    private void executeForNet(final Request<String, ?> request, final Callback<NetData<T>> callback) {
-        request.execute(new StringCallback() {
-
+    private void executeForFile(final Request<File, ?> request, final Callback<Response<T>> callback) {
+        request.execute(new FileCallback() {
             @Override
-            public void onSuccess(Response<String> response) {
-                String message = response.message();
-                int code = response.code();
-
-                // 如果需要，取消对话框
+            public void onSuccess(com.lzy.okgo.model.Response<File> response) {
+                if (isReleased()) {
+                    return;
+                }
                 dismissLoading();
-                String body = response.body();
-                Headers headers = response.headers();
-                // 如果处理Headers进行了拦截
-                if (handleHeaders(headers)) {
-                    callback.onFailed("");
-                    return;
-                }
-                NetData<T> data;
-                try {
-                    data = new Gson().fromJson(response.body(), mType);
-                } catch (JsonParseException e) {
-                    // Json数据错误
-                    callback.onFailed(mDataClass.getSimpleName() + "数据格式不正确");
-                    return;
-                }
-
-
+                callback.onSucceed(ResponseFactory.<T>createDownloadComplete(response.body()));
             }
 
             @Override
-            public void onStart(Request<String, ? extends Request> request) {
+            public void onStart(Request<File, ?> request) {
                 super.onStart(request);
                 showLoading();
             }
 
             @Override
-            public void onError(Response<String> response) {
+            public void onError(com.lzy.okgo.model.Response<File> response) {
                 super.onError(response);
                 dismissLoading();
-                int code = response.code();
-                switch (code) {
-                    case -1:
-                        callback.onFailed("无网络");
-                        break;
-                    default:
-                }
-                String body = response.body();
-                String message = response.message();
+                callback.onFailed(null);
+            }
 
-
-                Log.e("数据", "body:" + body);
-                Log.e("数据", "message:" + message);
-                Log.e("数据", "code:" + code);
+            @Override
+            public void downloadProgress(Progress progress) {
+                super.downloadProgress(progress);
+                callback.onProgress(progress);
             }
         });
     }
 
-    private void executeForString(final Request<String, ?> request, final Callback<NetData<T>> callback) {
+    private void executeForNet(final Request<String, ?> request, final Callback<Response<T>> callback) {
         request.execute(new StringCallback() {
             @Override
-            public void onSuccess(Response<String> response) {
+            public void onSuccess(com.lzy.okgo.model.Response<String> response) {
+                if (isReleased()) {
+                    return;
+                }
+                dismissLoading();
+                String body = response.body();
+                if (requestType == TYPE_STRING) {
+                    callback.onSucceed(ResponseFactory.<T>createResponseBody(body));
+                    return;
+                }
+                body = pretreatBody(body);
+                Headers headers = response.headers();
+                if (handleHeaders(headers)) {
+                    callback.onFailed(ResponseFactory.<T>createHandledHeaders());
+                    return;
+                }
+                Response<T> resultResponse;
+                try {
+                    resultResponse = new Gson().fromJson(body, responseType);
+                } catch (JsonParseException e) {
+                    callback.onFailed(ResponseFactory.<T>createParseJsonException());
+                    return;
+                }
+                if (isSucceedResponse(resultResponse)) {
+                    callback.onSucceed(resultResponse);
+                } else {
+                    callback.onFailed(resultResponse);
+                }
+            }
+
+            @Override
+            public void onStart(Request<String, ?> request) {
+                super.onStart(request);
+                showLoading();
+            }
+
+            @Override
+            public void onError(com.lzy.okgo.model.Response<String> response) {
+                super.onError(response);
+                dismissLoading();
+                switch (response.code()) {
+                    case -1:
+                        callback.onFailed(ResponseFactory.<T>createNoNetwork());
+                        break;
+                    default:
+                }
+            }
+        });
+    }
+
+    private void executeForString(final Request<String, ?> request, final Callback<Response<T>> callback) {
+        request.execute(new StringCallback() {
+            @Override
+            public void onSuccess(com.lzy.okgo.model.Response<String> response) {
+                if (isReleased()) {
+                    return;
+                }
                 // 如果需要，取消对话框
                 dismissLoading();
                 String body = response.body();
                 Headers headers = response.headers();
-                // 如果处理Headers进行了拦截
                 if (handleHeaders(headers)) {
-                    callback.onFailed("");
+                    callback.onFailed(null);
                     return;
                 }
 //                OkUtils utils = OkUtils.Holder.INSTANCE;
@@ -430,23 +461,23 @@ public class OkRequest<T> {
 //                    handleFilters(data, !mToSucceed, callback);
 //                }
 
-                NetData<T> data;
+                Response<T> data;
                 try {
-                    data = new Gson().fromJson(response.body(), mType);
+                    data = new Gson().fromJson(response.body(), responseType);
                 } catch (JsonParseException e) {
-                    // Json数据错误
-                    data = NetDataUtils.createJsonFailedData();
+                    callback.onFailed(ResponseFactory.<T>createParseJsonException());
+                    return;
                 }
             }
 
             @Override
-            public void onStart(Request<String, ? extends Request> request) {
+            public void onStart(Request request) {
                 super.onStart(request);
                 showLoading();
             }
 
             @Override
-            public void onError(Response<String> response) {
+            public void onError(com.lzy.okgo.model.Response response) {
                 super.onError(response);
                 dismissLoading();
                 ///callback.onFailed(response);
@@ -455,43 +486,48 @@ public class OkRequest<T> {
         });
     }
 
+    private String pretreatBody(String body) {
+        PretreatHandler validHandler = pretreatHandler == null ? defaultPretreatHandler : pretreatHandler;
+        if (validHandler != null) {
+            return validHandler.onHandle(body);
+        }
+        return body;
+    }
+
     private boolean handleHeaders(Headers headers) {
-        // 如果设置了Headers处理器
-        if (mHeadersHandler != null || sHeadersHandler != null) {
-            if (mHeadersHandler != null) {
-                return mHeadersHandler.onHandle(headers, mRefresher);
-            } else {
-                return sHeadersHandler.onHandle(headers, mRefresher);
+        HeadersHandler validHandler = headersHandler == null ? defaultHeadersHandler : headersHandler;
+        if (validHandler != null) {
+            return validHandler.onHandle(headers, refresher);
+        }
+        return false;
+    }
+
+    private boolean handleFilters(Response<T> response) {
+        FiltersHandler validHandler = filtersHandler == null ? defaultFiltersHandler : filtersHandler;
+        if (validHandler != null) {
+            return mToSucceed && validHandler.onHandle(response.code(), refresher);
+        }
+        return false;
+    }
+
+    private boolean isSucceedResponse(Response<T> response) {
+        int len = responseCodes.size();
+        for (int i = 0; i < len; i++) {
+            int code = responseCodes.keyAt(i);
+            if (code == response.code()) {
+                return responseCodes.valueAt(i);
             }
         }
         return false;
     }
 
-    private boolean filterNetData(NetData<T> netData) {
-         // 根据code回调
-        if (sSucceedCode == netData.getCode()) {
-            //callback.onFailed(data.getMessage());
-            return true;
-        } else if (sFailedCode == netData.getCode()) {
-            //callback.onFailed(data.getMessage());
-        } else {
-            for (int filter : mFilters) {
-                if (filter == netData.getCode()) {
-                    //handleFilters(data, mToSucceed, callback);
-                    return false;
-                }
-            }
-            //handleFilters(data, !mToSucceed, callback);
-        }
-        return false;
-    }
 
     /**
      * 功能描述：关联的目标文件是否被释放（就是防止空指针）
      * @return true 被释放
      */
     private boolean isReleased() {
-        return mReference == null || mReference.get() == null;
+        return reference == null || reference.get() == null;
     }
 
 

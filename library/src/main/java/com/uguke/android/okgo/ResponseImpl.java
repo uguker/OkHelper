@@ -6,7 +6,12 @@ import com.google.gson.annotations.SerializedName;
  * 功能描述：网络请求返回实体
  * @author  LeiJue
  */
-public class NetDataImpl<T> implements NetData<T> {
+public class ResponseImpl<T> implements Response<T> {
+
+    @SerializedName(
+            value = "data",
+            alternate = {"result"})
+    private T data;
 
     @SerializedName(
             value = "code",
@@ -18,32 +23,27 @@ public class NetDataImpl<T> implements NetData<T> {
             alternate = {"reason", "returnMsg", "msg", "error"})
     private String message;
 
-    @SerializedName(
-            value = "data",
-            alternate = {"result"})
-    private T data;
+    @Override
+    public T body() {
+        return data;
+    }
 
     @Override
-    public int getCode() {
+    public int code() {
         return code;
+    }
+
+    @Override
+    public String message() {
+        return message;
     }
 
     public void setCode(int code) {
         this.code = code;
     }
 
-    @Override
-    public String getMessage() {
-        return message;
-    }
-
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    @Override
-    public T getData() {
-        return data;
     }
 
     public void setData(T data) {

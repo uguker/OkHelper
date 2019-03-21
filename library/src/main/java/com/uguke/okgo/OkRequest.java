@@ -2,7 +2,6 @@ package com.uguke.okgo;
 
 import android.content.Context;
 import android.support.annotation.ColorInt;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
@@ -22,10 +21,9 @@ import com.lzy.okgo.request.PatchRequest;
 import com.lzy.okgo.request.PostRequest;
 import com.lzy.okgo.request.PutRequest;
 import com.lzy.okgo.request.base.Request;
-import com.uguke.android.okgo.FiltersHandler;
-import com.uguke.android.okgo.HeadersHandler;
+import com.uguke.android.okgo.handler.FiltersHandler;
+import com.uguke.android.okgo.handler.HeadersHandler;
 import com.uguke.android.okgo.LoadingDialog;
-import com.uguke.android.okgo.OkUtils;
 import com.uguke.reflect.TypeBuilder;
 
 import java.io.File;

@@ -10,15 +10,15 @@ import com.lzy.okgo.model.Progress;
 public abstract class Callback<T> {
     /**
      * 功能描述：请求成功回调
-     * @param data     返回实例
+     * @param response     返回实例
      */
-    public abstract void onSucceed(T data);
+    public abstract void onSucceed(T response);
 
     /**
      * 功能描述：请求失败回调
-     * @param msg   提示信息
+     * @param response     返回实例
      */
-    public abstract void onFailed(String msg);
+    public abstract void onFailed(T response);
 
     public void onProgress(Progress progress) {}
 }

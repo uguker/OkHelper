@@ -2,16 +2,16 @@ package com.uguke.demo.okgo;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
-import com.lzy.okgo.OkGo;
+//import com.lzy.okgo.OkGo;
 
 import com.uguke.android.okgo.Callback;
-import com.uguke.android.okgo.NetData;
-import com.uguke.android.okgo.NetDataImpl;
+import com.uguke.android.okgo.Response;
+import com.uguke.android.okgo.ResponseImpl;
 import com.uguke.android.okgo.OkUtils;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,8 +33,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        OkUtils.setNetDataImplClass(NetDataImpl.class);
-        OkGo.getInstance().setCacheTime(1000);
+        OkUtils.setNetDataImplClass(ResponseImpl.class);
+        //OkGo.getInstance().setCacheTime(1000);
         OkUtils.setSucceedCode(10);
 //        OkUtils.setFiltersHandler(new FiltersHandler() {
 //            @Override
@@ -56,7 +56,8 @@ public class MainActivity extends AppCompatActivity {
     private void refresh() {
         OkUtils.toObj(this)
                 //.get("http://211.149.191.242:8080/DApp/version/index/selectIndex")
-                .get("https://www.baidu.com")
+                .post("https://www.baidu.com")
+                .upJson("{}")
                 .loading(this)
 //                .filters(200)
 //                .filtersHandler(new FiltersHandler() {
@@ -72,17 +73,19 @@ public class MainActivity extends AppCompatActivity {
 //                        return false;
 //                    }
 //                })
-                .execute(new Callback<NetData<Object>>() {
+
+                .execute(new Callback<Response<Object>>() {
                     @Override
-                    public void onSucceed(NetData<Object> data) {
-                        Log.e("数据", "呵呵3");
+                    public void onSucceed(Response<Object> response) {
+
                     }
 
                     @Override
-                    public void onFailed(String msg) {
-                        Toast.makeText(getApplicationContext(), msg, 1500).show();
+                    public void onFailed(Response<Object> response) {
+
                     }
                 });
+        Response<File> response = new ResponseImpl<>();
     }
 
     private void submit() {

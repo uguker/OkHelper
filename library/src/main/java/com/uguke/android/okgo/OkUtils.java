@@ -8,7 +8,9 @@ import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
-import com.uguke.okgo.PretreatHandler;
+import com.uguke.android.okgo.handler.FiltersHandler;
+import com.uguke.android.okgo.handler.HeadersHandler;
+import com.uguke.android.okgo.handler.PretreatHandler;
 
 import java.io.File;
 import java.util.List;
@@ -36,7 +38,7 @@ public class OkUtils {
     protected FiltersHandler mFiltersHandler;
     protected HeadersHandler mHeadersHandler;
 
-    private Class<?> mNetDataImplClass;
+    private Class<?> mResponseDataClass;
     /** 数据预处理器 **/
     protected PretreatHandler mPretreatHandler;
 
@@ -57,8 +59,8 @@ public class OkUtils {
         OkGo.getInstance().init(app);
     }
 
-    public static void setNetDataImplClass(Class<? extends NetData> clazz) {
-        Holder.INSTANCE.mNetDataImplClass = clazz;
+    public static void setNetDataImplClass(Class<? extends Response> clazz) {
+        Holder.INSTANCE.mResponseDataClass = clazz;
     }
 
     public static void setLoadingColor(@ColorInt int color) {
@@ -86,11 +88,11 @@ public class OkUtils {
     }
 
     public static void setFailedCode(int code) {
-        OkRequest.sFailedCode = code;
+        OkRequest.defaultFailedCode = code;
     }
 
     public static void setSucceedCode(int code) {
-        OkRequest.sSucceedCode = code;
+        OkRequest.defaultSucceedCode = code;
     }
 
     public static void setJsonErrorCode(int code) {
@@ -98,11 +100,15 @@ public class OkUtils {
     }
 
     public static void setHeadersHandler(HeadersHandler handler) {
-        Holder.INSTANCE.mHeadersHandler = handler;
+        OkRequest.defaultHeadersHandler = handler;
     }
 
     public static void setFiltersHandler(FiltersHandler handler) {
-        Holder.INSTANCE.mFiltersHandler = handler;
+        OkRequest.defaultFiltersHandler = handler;
+    }
+
+    public static void setPretreatHandler(PretreatHandler handler) {
+        OkRequest.defaultPretreatHandler = handler;
     }
 
     public static <T> OkRequest<T> toObj(Object obj, Class<T> clazz) {
