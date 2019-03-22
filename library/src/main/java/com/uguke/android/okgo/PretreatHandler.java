@@ -1,16 +1,17 @@
 package com.uguke.android.okgo.handler;
 
+import com.uguke.android.okgo.Response;
+
 /**
  * 功能描述：
  * @author LeiJue
  */
-public interface FiltersHandler {
+public interface PretreatHandler {
 
     /**
      * 功能描述：筛选处理
-     * @param code 请求码
-     * @param refresher 刷新控件
+     * @param response 请求码
      * @return true为拦截
      */
-    boolean onHandle(int code, Object refresher);
+    boolean onHandle(Response response);
 }
