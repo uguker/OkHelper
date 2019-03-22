@@ -1,4 +1,4 @@
-package com.uguke.android.okgo.handler;
+package com.uguke.android.okgo;
 
 /**
  * 功能描述：接口数据预处理器

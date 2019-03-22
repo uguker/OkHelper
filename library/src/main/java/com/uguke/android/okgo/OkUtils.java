@@ -8,9 +8,6 @@ import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
-import com.uguke.android.okgo.handler.FiltersHandler;
-import com.uguke.android.okgo.handler.HeadersHandler;
-import com.uguke.android.okgo.handler.PretreatHandler;
 
 import java.io.File;
 import java.util.List;
@@ -35,12 +32,12 @@ public class OkUtils {
     protected String mJsonErrorText;
 
     protected HttpParams mParams;
-    protected FiltersHandler mFiltersHandler;
+    protected PretreatHandler mFiltersHandler;
     protected HeadersHandler mHeadersHandler;
 
     private Class<?> mResponseDataClass;
     /** 数据预处理器 **/
-    protected PretreatHandler mPretreatHandler;
+    protected ConvertHandler mPretreatHandler;
 
     static class Holder {
         static final OkUtils INSTANCE = new OkUtils();
@@ -103,12 +100,12 @@ public class OkUtils {
         OkRequest.defaultHeadersHandler = handler;
     }
 
-    public static void setFiltersHandler(FiltersHandler handler) {
-        OkRequest.defaultFiltersHandler = handler;
-    }
-
     public static void setPretreatHandler(PretreatHandler handler) {
         OkRequest.defaultPretreatHandler = handler;
+    }
+
+    public static void setConvertHandler(ConvertHandler handler) {
+        OkRequest.defaultConvertHandler = handler;
     }
 
     public static <T> OkRequest<T> toObj(Object obj, Class<T> clazz) {

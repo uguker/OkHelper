@@ -4,14 +4,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
-//import com.lzy.okgo.OkGo;
-
 import com.uguke.android.okgo.Callback;
 import com.uguke.android.okgo.Response;
 import com.uguke.android.okgo.ResponseImpl;
 import com.uguke.android.okgo.OkUtils;
+import com.uguke.android.okgo.ConvertHandler;
+import com.uguke.android.okgo.HeadersHandler;
 
-import java.io.File;
+import okhttp3.Headers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -59,6 +59,20 @@ public class MainActivity extends AppCompatActivity {
                 .post("https://www.baidu.com")
                 .upJson("{}")
                 .loading(this)
+                .succeedCodes(100, 200)
+                .failedCodes(200, 300)
+                .convertHandler(new ConvertHandler() {
+                    @Override
+                    public String onHandle(String body) {
+                        return null;
+                    }
+                })
+                .headersHandler(new HeadersHandler() {
+                    @Override
+                    public boolean onHandle(Headers headers) {
+                        return false;
+                    }
+                })
 //                .filters(200)
 //                .filtersHandler(new FiltersHandler() {
 //                    @Override
@@ -85,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-        Response<File> response = new ResponseImpl<>();
+
     }
 
     private void submit() {

@@ -3,7 +3,7 @@ package com.uguke.android.okgo;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * 功能描述：网络请求返回实体
+ * 功能描述：网络请求响应实体
  * @author  LeiJue
  */
 public class ResponseImpl<T> implements Response<T> {

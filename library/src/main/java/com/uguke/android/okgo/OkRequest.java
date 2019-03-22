@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 
 import com.google.gson.Gson;
@@ -19,10 +18,6 @@ import com.lzy.okgo.model.Progress;
 
 import com.lzy.okgo.request.base.BodyRequest;
 import com.lzy.okgo.request.base.Request;
-import com.uguke.android.okgo.handler.FiltersHandler;
-import com.uguke.android.okgo.handler.HeadersHandler;
-import com.uguke.android.okgo.handler.PretreatHandler;
-import com.uguke.okgo.NetData;
 import com.uguke.okgo.R;
 import com.uguke.reflect.TypeBuilder;
 
@@ -30,7 +25,6 @@ import java.io.File;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Type;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -58,19 +52,16 @@ public class OkRequest<T> {
     static int defaultFailedCode = 300;
 
     /** 全局过滤器 **/
-    static FiltersHandler defaultFiltersHandler;
+    static PretreatHandler defaultPretreatHandler;
     /** 全局请求头处理器 **/
     static HeadersHandler defaultHeadersHandler;
     /** 全局预处理器 **/
-    static PretreatHandler defaultPretreatHandler;
+    static ConvertHandler defaultConvertHandler;
 
     private String requestUrl;
     private String mUpJson;
 
     private Object mTag;
-    private boolean mDownload;
-    /** 是否加在过滤规则中的数据以onSucceed()返回 **/
-    private boolean mToSucceed;
 
     private HttpMethod httpMethod;
     private HttpParams httpParams;
@@ -87,13 +78,11 @@ public class OkRequest<T> {
     private String mLoadingText;
     private boolean mLoadingDimEnable;
     private LoadingDialog mLoading;
-    /** 刷新控件 **/
-    private Object refresher;
 
     private SparseBooleanArray responseCodes;
-    private FiltersHandler filtersHandler;
+    private PretreatHandler filtersHandler;
     private HeadersHandler headersHandler;
-    private PretreatHandler pretreatHandler;
+    private ConvertHandler convertHandler;
 
     /** 用来防止空指针 **/
     private Reference<Object> reference;
@@ -267,32 +256,32 @@ public class OkRequest<T> {
         return this;
     }
 
-    public OkRequest<T> setHeadersHandler(HeadersHandler handler) {
+    public OkRequest<T> succeedCodes(int ... codes) {
+        for (int code : codes) {
+            responseCodes.put(code, true);
+        }
+        return this;
+    }
+
+    public OkRequest<T> failedCodes(int ... codes) {
+        for (int code : codes) {
+            responseCodes.put(code, false);
+        }
+        return this;
+    }
+
+    public OkRequest<T> headersHandler(HeadersHandler handler) {
         headersHandler = handler;
         return this;
     }
 
-    public OkRequest<T> setFiltersHandler(FiltersHandler handler) {
-        filtersHandler = handler;
-        return this;
-    }
-
-    public OkRequest<T> setPretreatHandler(PretreatHandler handler) {
-        pretreatHandler = handler;
+    public OkRequest<T> convertHandler(ConvertHandler handler) {
+        convertHandler = handler;
         return this;
     }
 
     @SuppressWarnings("unchecked")
     public void execute(Callback<Response<T>> callback) {
-        // 如果是请求字符串
-        if (requestType == TYPE_STRING) {
-            Request request = OkGo.get(requestUrl);
-            request.tag(mTag);
-            request.params(httpParams);
-            request.headers(httpHeaders);
-            executeForString(request, callback);
-            return;
-        }
         // 如果是请求文件
         if (requestType == TYPE_FILE) {
             Request<File, ?> request = OkGo.get(requestUrl);
@@ -335,7 +324,7 @@ public class OkRequest<T> {
         request.tag(mTag);
         request.params(httpParams);
         request.headers(httpHeaders);
-        executeForNet(request, callback);
+        executeForCommon(request, callback);
     }
 
     public OkRequest<T> loading(Context context) {
@@ -358,12 +347,18 @@ public class OkRequest<T> {
             @Override
             public void onStart(Request<File, ?> request) {
                 super.onStart(request);
+                if (isReleased()) {
+                    return;
+                }
                 showLoading();
             }
 
             @Override
             public void onError(com.lzy.okgo.model.Response<File> response) {
                 super.onError(response);
+                if (isReleased()) {
+                    return;
+                }
                 dismissLoading();
                 callback.onFailed(null);
             }
@@ -371,12 +366,15 @@ public class OkRequest<T> {
             @Override
             public void downloadProgress(Progress progress) {
                 super.downloadProgress(progress);
+                if (isReleased()) {
+                    return;
+                }
                 callback.onProgress(progress);
             }
         });
     }
 
-    private void executeForNet(final Request<String, ?> request, final Callback<Response<T>> callback) {
+    private void executeForCommon(final Request<String, ?> request, final Callback<Response<T>> callback) {
         request.execute(new StringCallback() {
             @Override
             public void onSuccess(com.lzy.okgo.model.Response<String> response) {
@@ -389,7 +387,7 @@ public class OkRequest<T> {
                     callback.onSucceed(ResponseFactory.<T>createResponseBody(body));
                     return;
                 }
-                body = pretreatBody(body);
+                body = convertBody(body);
                 Headers headers = response.headers();
                 if (handleHeaders(headers)) {
                     callback.onFailed(ResponseFactory.<T>createHandledHeaders());
@@ -402,6 +400,10 @@ public class OkRequest<T> {
                     callback.onFailed(ResponseFactory.<T>createParseJsonException());
                     return;
                 }
+                if (handlePretreat(resultResponse)) {
+                    callback.onFailed(ResponseFactory.<T>createPretreatResponse());
+                    return;
+                }
                 if (isSucceedResponse(resultResponse)) {
                     callback.onSucceed(resultResponse);
                 } else {
@@ -412,12 +414,18 @@ public class OkRequest<T> {
             @Override
             public void onStart(Request<String, ?> request) {
                 super.onStart(request);
+                if (isReleased()) {
+                    return;
+                }
                 showLoading();
             }
 
             @Override
             public void onError(com.lzy.okgo.model.Response<String> response) {
                 super.onError(response);
+                if (isReleased()) {
+                    return;
+                }
                 dismissLoading();
                 switch (response.code()) {
                     case -1:
@@ -429,65 +437,8 @@ public class OkRequest<T> {
         });
     }
 
-    private void executeForString(final Request<String, ?> request, final Callback<Response<T>> callback) {
-        request.execute(new StringCallback() {
-            @Override
-            public void onSuccess(com.lzy.okgo.model.Response<String> response) {
-                if (isReleased()) {
-                    return;
-                }
-                // 如果需要，取消对话框
-                dismissLoading();
-                String body = response.body();
-                Headers headers = response.headers();
-                if (handleHeaders(headers)) {
-                    callback.onFailed(null);
-                    return;
-                }
-//                OkUtils utils = OkUtils.Holder.INSTANCE;
-
-                // 根据code回调
-//                if (utils.mSucceedCode == data.getCode()) {
-//                    callback.onSucceed(data);
-//                } else if (utils.mFailedCode == data.getCode()) {
-//                    callback.onFailed(data.getMessage());
-//                } else {
-//                    for (int filter : mFilters) {
-//                        if (filter == data.getCode()) {
-//                            handleFilters(data, mToSucceed, callback);
-//                            return;
-//                        }
-//                    }
-//                    handleFilters(data, !mToSucceed, callback);
-//                }
-
-                Response<T> data;
-                try {
-                    data = new Gson().fromJson(response.body(), responseType);
-                } catch (JsonParseException e) {
-                    callback.onFailed(ResponseFactory.<T>createParseJsonException());
-                    return;
-                }
-            }
-
-            @Override
-            public void onStart(Request request) {
-                super.onStart(request);
-                showLoading();
-            }
-
-            @Override
-            public void onError(com.lzy.okgo.model.Response response) {
-                super.onError(response);
-                dismissLoading();
-                ///callback.onFailed(response);
-                //callback.onFailed(OkUtils.Holder.INSTANCE.mFailedText);
-            }
-        });
-    }
-
-    private String pretreatBody(String body) {
-        PretreatHandler validHandler = pretreatHandler == null ? defaultPretreatHandler : pretreatHandler;
+    private String convertBody(String body) {
+        ConvertHandler validHandler = convertHandler == null ? defaultConvertHandler : convertHandler;
         if (validHandler != null) {
             return validHandler.onHandle(body);
         }
@@ -497,15 +448,14 @@ public class OkRequest<T> {
     private boolean handleHeaders(Headers headers) {
         HeadersHandler validHandler = headersHandler == null ? defaultHeadersHandler : headersHandler;
         if (validHandler != null) {
-            return validHandler.onHandle(headers, refresher);
+            return validHandler.onHandle(headers);
         }
         return false;
     }
 
-    private boolean handleFilters(Response<T> response) {
-        FiltersHandler validHandler = filtersHandler == null ? defaultFiltersHandler : filtersHandler;
-        if (validHandler != null) {
-            return mToSucceed && validHandler.onHandle(response.code(), refresher);
+    private boolean handlePretreat(Response<T> response) {
+        if (defaultPretreatHandler != null) {
+            return defaultPretreatHandler.onHandle(response);
         }
         return false;
     }
@@ -521,15 +471,9 @@ public class OkRequest<T> {
         return false;
     }
 
-
-    /**
-     * 功能描述：关联的目标文件是否被释放（就是防止空指针）
-     * @return true 被释放
-     */
     private boolean isReleased() {
         return reference == null || reference.get() == null;
     }
-
 
     private void showLoading() {
         if (mLoading != null) {

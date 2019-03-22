@@ -1,9 +1,7 @@
-package com.uguke.android.okgo.handler;
-
-import com.uguke.android.okgo.Response;
+package com.uguke.android.okgo;
 
 /**
- * 功能描述：
+ * 功能描述：预处理器（对个别Response提前处理）
  * @author LeiJue
  */
 public interface PretreatHandler {

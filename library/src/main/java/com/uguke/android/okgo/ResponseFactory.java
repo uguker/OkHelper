@@ -66,6 +66,25 @@ class ResponseFactory {
         };
     }
 
+    static <T> Response<T> createPretreatResponse() {
+        return new Response<T>() {
+            @Override
+            public T body() {
+                return null;
+            }
+
+            @Override
+            public int code() {
+                return OkRequest.defaultFailedCode;
+            }
+
+            @Override
+            public String message() {
+                return null;
+            }
+        };
+    }
+
     static <T> Response<T> createNoNetwork() {
         return new Response<T>() {
             @Override
