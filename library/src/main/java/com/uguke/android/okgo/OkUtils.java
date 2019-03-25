@@ -1,6 +1,7 @@
 package com.uguke.android.okgo;
 
 import android.app.Application;
+import android.content.Context;
 import android.support.annotation.ColorInt;
 
 import com.lzy.okgo.OkGo;
@@ -8,6 +9,7 @@ import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
+import com.lzy.okgo.utils.HttpUtils;
 
 import java.io.File;
 import java.util.List;
@@ -15,7 +17,7 @@ import java.util.List;
 import okhttp3.OkHttpClient;
 
 /**
- * 功能描述：OkGo辅助工具类
+ * OkGo辅助工具类
  * @author  LeiJue
  */
 public class OkUtils {
@@ -32,10 +34,11 @@ public class OkUtils {
     protected String mJsonErrorText;
 
     protected HttpParams mParams;
-    protected PretreatHandler mFiltersHandler;
+    protected InterceptHandler mFiltersHandler;
     protected HeadersHandler mHeadersHandler;
 
     private Class<?> mResponseDataClass;
+    private Application app;
     /** 数据预处理器 **/
     protected ConvertHandler mPretreatHandler;
 
@@ -52,8 +55,38 @@ public class OkUtils {
         mParams = new HttpParams();
     }
 
-    public static void init(Application app) {
+    public OkUtils init(Application app) {
+        this.app = app;
         OkGo.getInstance().init(app);
+        return this;
+    }
+
+    private static class OkUtilsHolder {
+        //@SuppressLint("StaticFieldLeak")
+
+        private final static OkUtils HOLDER = new OkUtils();
+    }
+
+    public static OkUtils getInstance() {
+        return OkUtils.OkUtilsHolder.HOLDER;
+    }
+
+
+
+    public static void openDebug() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor("OkGo");
+        //log打印级别，决定了log显示的详细程度
+        loggingInterceptor.setPrintLevel(HttpLoggingInterceptor.Level.BODY);
+        //log颜色级别，决定了log在控制台显示的颜色
+        loggingInterceptor.setColorLevel(java.util.logging.Level.INFO);
+        builder.addInterceptor(loggingInterceptor);
+        OkGo.getInstance().setOkHttpClient(builder.build());
+    }
+
+    public Context getContext() {
+        HttpUtils.checkNotNull(app, "please call OkUtils.getInstance().init() first in application!");
+        return app.getApplicationContext();
     }
 
     public static void setNetDataImplClass(Class<? extends Response> clazz) {
@@ -100,8 +133,8 @@ public class OkUtils {
         OkRequest.defaultHeadersHandler = handler;
     }
 
-    public static void setPretreatHandler(PretreatHandler handler) {
-        OkRequest.defaultPretreatHandler = handler;
+    public static void setInterceptHandler(InterceptHandler handler) {
+        OkRequest.defaultInterceptHandler = handler;
     }
 
     public static void setConvertHandler(ConvertHandler handler) {

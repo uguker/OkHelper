@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 
 import com.google.gson.Gson;
@@ -31,7 +32,7 @@ import java.util.Map;
 import okhttp3.Headers;
 
 /**
- * 功能描述：OkUtils网络请求
+ * OkUtils网络请求
  * @author LeiJue
  */
 public class OkRequest<T> {
@@ -52,7 +53,7 @@ public class OkRequest<T> {
     static int defaultFailedCode = 300;
 
     /** 全局过滤器 **/
-    static PretreatHandler defaultPretreatHandler;
+    static InterceptHandler defaultInterceptHandler;
     /** 全局请求头处理器 **/
     static HeadersHandler defaultHeadersHandler;
     /** 全局预处理器 **/
@@ -80,7 +81,7 @@ public class OkRequest<T> {
     private LoadingDialog mLoading;
 
     private SparseBooleanArray responseCodes;
-    private PretreatHandler filtersHandler;
+    private InterceptHandler filtersHandler;
     private HeadersHandler headersHandler;
     private ConvertHandler convertHandler;
 
@@ -397,11 +398,16 @@ public class OkRequest<T> {
                 try {
                     resultResponse = new Gson().fromJson(body, responseType);
                 } catch (JsonParseException e) {
+                    LogUtils.e(body);
                     callback.onFailed(ResponseFactory.<T>createParseJsonException());
                     return;
                 }
-                if (handlePretreat(resultResponse)) {
-                    callback.onFailed(ResponseFactory.<T>createPretreatResponse());
+                if (resultResponse == null) {
+                    callback.onFailed(ResponseFactory.<T>createEmptyResponse());
+                    return;
+                }
+                if (handleInterceptor(resultResponse)) {
+                    callback.onFailed(ResponseFactory.<T>createInterceptResponse());
                     return;
                 }
                 if (isSucceedResponse(resultResponse)) {
@@ -453,9 +459,9 @@ public class OkRequest<T> {
         return false;
     }
 
-    private boolean handlePretreat(Response<T> response) {
-        if (defaultPretreatHandler != null) {
-            return defaultPretreatHandler.onHandle(response);
+    private boolean handleInterceptor(Response<T> response) {
+        if (defaultInterceptHandler != null) {
+            return defaultInterceptHandler.onHandle(response);
         }
         return false;
     }

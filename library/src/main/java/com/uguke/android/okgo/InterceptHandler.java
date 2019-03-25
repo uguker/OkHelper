@@ -1,10 +1,10 @@
 package com.uguke.android.okgo;
 
 /**
- * 预处理器（对个别Response提前处理）
+ * 预处理器（对个别Response进行拦截）
  * @author LeiJue
  */
-public interface PretreatHandler {
+public interface InterceptHandler {
 
     /**
      * 筛选处理

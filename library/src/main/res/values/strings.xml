@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">okgo</string>
+    <string name="app_name">OkUtils</string>
+
+    <string name="okUtilsMethod">Method: </string>
+    <string name="okUtilsUrl">Url: </string>
+
+    <string name="okUtilsBody">Body: </string>
+    <string name="okUtilsCode">Code: </string>
+    <string name="okUtilsMessage">Message: </string>
 </resources>

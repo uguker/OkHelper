@@ -3,7 +3,7 @@ package com.uguke.android.okgo;
 import java.io.File;
 
 /**
- * 功能描述：网络数据工具
+ * 网络数据工具
  * @author LeiJue
  */
 class ResponseFactory {
@@ -66,7 +66,7 @@ class ResponseFactory {
         };
     }
 
-    static <T> Response<T> createPretreatResponse() {
+    static <T> Response<T> createInterceptResponse() {
         return new Response<T>() {
             @Override
             public T body() {
@@ -100,6 +100,25 @@ class ResponseFactory {
             @Override
             public String message() {
                 return "无网络";
+            }
+        };
+    }
+
+    static <T> Response<T> createEmptyResponse() {
+        return new Response<T>() {
+            @Override
+            public T body() {
+                return null;
+            }
+
+            @Override
+            public int code() {
+                return OkRequest.defaultFailedCode;
+            }
+
+            @Override
+            public String message() {
+                return null;
             }
         };
     }

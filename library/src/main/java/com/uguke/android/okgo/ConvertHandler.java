@@ -1,7 +1,7 @@
 package com.uguke.android.okgo;
 
 /**
- * 功能描述：接口数据预处理器
+ * 接口数据预处理器
  * @author LeiJue
  */
 public interface ConvertHandler {

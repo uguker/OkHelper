@@ -21,7 +21,7 @@ import android.widget.TextView;
 import com.uguke.okgo.R;
 
 /**
- * 功能描述：Loading对话框
+ * 加载对话框
  * @author LeiJue
  */
 public class LoadingDialog extends Dialog {
