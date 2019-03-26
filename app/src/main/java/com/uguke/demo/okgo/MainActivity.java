@@ -42,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
 
 
         OkUtils.toJson(this)
-                //.get("http://211.149.191.242:8080/DApp/version/index/selectIndex")
-                .get("https://api2.bmob.cn/1/classes/AppVersion")
+                .get("http://211.149.191.242:8080/DApp/version/index/selectIndex")
+                //.get("https://api2.bmob.cn/1/classes/AppVersion")
                 .params("1", "1")
                 .showLoading(this)
                 .succeedCodes(0, 200)

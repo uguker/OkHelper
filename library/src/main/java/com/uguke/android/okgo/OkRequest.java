@@ -1,6 +1,5 @@
 package com.uguke.android.okgo;
 
-import android.app.Activity;
 import android.app.Fragment;
 import android.support.annotation.ColorInt;
 import android.support.v4.app.FragmentActivity;
@@ -47,6 +46,8 @@ public class OkRequest<T> {
     static final int TYPE_STRING = 2;
     /** String数据 **/
     static final int TYPE_FILE = 3;
+
+    static final String TAG_DIALOG = "tag_dialog";
     // OkGo请求相关
     private String requestUrl;
     private String mUpJson;
@@ -519,7 +520,7 @@ public class OkRequest<T> {
                     //.size(mLoadingSize)
                     //.color(mLoadingColor)
             //        .dimEnable(mLoadingDimEnable)
-                    .show(activity.getSupportFragmentManager(), "123");
+                    .show(activity.getSupportFragmentManager(), TAG_DIALOG);
         }
     }
 
@@ -527,7 +528,7 @@ public class OkRequest<T> {
 
         FragmentManager manager = activity.getSupportFragmentManager();
 
-        LoadingDialog dialog = (LoadingDialog) manager.findFragmentByTag("123");
+        LoadingDialog dialog = (LoadingDialog) manager.findFragmentByTag(TAG_DIALOG);
         if (dialog != null) {
             dialog.dismiss();
         }
