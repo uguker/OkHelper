@@ -10,7 +10,7 @@ public class ResponseImpl<T> implements Response<T> {
 
     @SerializedName(
             value = "data",
-            alternate = {"result"})
+            alternate = {"result", "results"})
     private T data;
 
     @SerializedName(

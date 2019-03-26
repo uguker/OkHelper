@@ -157,8 +157,12 @@ public class OkUtils {
         return new OkRequest<>(obj, File.class, OkRequest.TYPE_FILE);
     }
 
+    public static <T> OkRequest<String> toJson(Object obj) {
+        return new OkRequest<>(obj, String.class, OkRequest.TYPE_STRING);
+    }
+
     public static <T> OkRequest<List<T>> toList(Object obj, Class<T> clazz) {
-        return new OkRequest<>(obj, clazz, OkRequest.TYPE_FILE);
+        return new OkRequest<>(obj, clazz, OkRequest.TYPE_NET_LIST);
     }
 
     //================================================//
