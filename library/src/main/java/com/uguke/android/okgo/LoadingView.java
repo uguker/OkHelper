@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 /**
@@ -16,7 +17,7 @@ import android.view.View;
  * <p/>
  * 仿网易邮箱，实现加载动画效果
  */
-public class ProgressCircelView extends View {
+public class LoadingView extends View {
 
     private Paint paint;
     private Paint paintPoint;
@@ -80,19 +81,26 @@ public class ProgressCircelView extends View {
     private double withdPoint;
     private double heightPoint;
 
-    public ProgressCircelView(Context context) {
+    public LoadingView(Context context) {
         super(context);
     }
 
-    public ProgressCircelView(Context context, AttributeSet attrs) {
+    public LoadingView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
     }
 
-    public ProgressCircelView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public LoadingView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
 
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        Log.e("s数据", "我被带给你用了");
+        handler.removeCallbacksAndMessages(null);
     }
 
     public void beginRoute() {

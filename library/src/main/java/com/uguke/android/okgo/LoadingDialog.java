@@ -14,14 +14,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
 import android.util.DisplayMetrics;
 
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 /**
  * 加载对话框
@@ -30,7 +28,7 @@ import android.widget.TextView;
 public class LoadingDialog extends DialogFragment {
 
     private TextView loadingText;
-    private ProgressCircelView loadingView;
+    private LoadingView loadingView;
 
     private int duration = 2000;
     private boolean waitingForDismiss;

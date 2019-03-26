@@ -11,7 +11,7 @@
         <!--style="@style/Widget.AppCompat.ProgressBar"-->
         <!--android:layout_width="40dp"-->
         <!--android:layout_height="40dp" />-->
-    <com.uguke.android.okgo.ProgressCircelView
+    <com.uguke.android.okgo.LoadingView
         android:id="@+id/ok_loading"
         android:layout_width="40dp"
         android:layout_height="40dp" />
