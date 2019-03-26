@@ -1,5 +1,6 @@
 package com.uguke.android.okgo;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.support.annotation.ColorInt;
@@ -7,12 +8,14 @@ import android.support.annotation.ColorInt;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
+import com.lzy.okgo.interceptor.HttpLoggingInterceptor;
 import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
 import com.lzy.okgo.utils.HttpUtils;
 
 import java.io.File;
 import java.util.List;
+import java.util.logging.Level;
 
 import okhttp3.OkHttpClient;
 
@@ -27,32 +30,26 @@ public class OkUtils {
     protected String mLoadingText;
     protected boolean mLoadingDimEnable;
 
-    protected int mFailedCode;
-    protected int mSucceedCode;
-    protected int mJsonErrorCode;
-    protected String mFailedText;
-    protected String mJsonErrorText;
-
-    protected HttpParams mParams;
-    protected InterceptHandler mFiltersHandler;
-    protected HeadersHandler mHeadersHandler;
-
-    private Class<?> mResponseDataClass;
+    private int failedCode;
+    private int succeedCode;
     private Application app;
-    /** 数据预处理器 **/
-    protected ConvertHandler mPretreatHandler;
+    private Class<? extends Response> responseClass;
+
+    /** 全局过滤器 **/
+    private InterceptHandler interceptHandler;
+    /** 全局请求头处理器 **/
+    private HeadersHandler headersHandler;
+    /** 全局预处理器 **/
+    private ConvertHandler convertHandler;
 
     static class Holder {
+        @SuppressLint("StaticFieldLeak")
         static final OkUtils INSTANCE = new OkUtils();
     }
 
     private OkUtils() {
-        mSucceedCode = 200;
-        mFailedCode = 101;
-        mJsonErrorCode = 0;
-        mFailedText = "网络请求异常";
         mLoadingSize = 60;
-        mParams = new HttpParams();
+        responseClass = ResponseImpl.class;
     }
 
     public OkUtils init(Application app) {
@@ -61,27 +58,70 @@ public class OkUtils {
         return this;
     }
 
-    private static class OkUtilsHolder {
-        //@SuppressLint("StaticFieldLeak")
-
-        private final static OkUtils HOLDER = new OkUtils();
-    }
-
-    public static OkUtils getInstance() {
-        return OkUtils.OkUtilsHolder.HOLDER;
-    }
-
-
-
-    public static void openDebug() {
+    public OkUtils openDebug(String tag) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor("OkGo");
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(tag);
         //log打印级别，决定了log显示的详细程度
         loggingInterceptor.setPrintLevel(HttpLoggingInterceptor.Level.BODY);
         //log颜色级别，决定了log在控制台显示的颜色
-        loggingInterceptor.setColorLevel(java.util.logging.Level.INFO);
+        loggingInterceptor.setColorLevel(Level.SEVERE);
         builder.addInterceptor(loggingInterceptor);
         OkGo.getInstance().setOkHttpClient(builder.build());
+        return this;
+    }
+
+    public OkUtils openDebug() {
+       return openDebug("OkUtils");
+    }
+
+    public OkUtils setResponseClass(Class<? extends Response> clazz) {
+       responseClass = clazz;
+        return this;
+    }
+
+    public OkUtils setFailedCode(int code) {
+        failedCode = code;
+        return this;
+    }
+
+    public OkUtils setSucceedCode(int code) {
+        succeedCode = code;
+        return this;
+    }
+
+    public OkUtils setHeadersHandler(HeadersHandler handler) {
+        headersHandler = handler;
+        return this;
+    }
+
+    public OkUtils setInterceptHandler(InterceptHandler handler) {
+        interceptHandler = handler;
+        return this;
+    }
+
+    public OkUtils setConvertHandler(ConvertHandler handler) {
+        convertHandler = handler;
+        return this;
+    }
+
+    HeadersHandler getHeadersHandler() {
+        return headersHandler;
+    }
+
+    InterceptHandler getInterceptHandler() {
+        return interceptHandler;
+    }
+
+    ConvertHandler getConvertHandler() {
+        return convertHandler;
+    }
+
+    int getFailedCode() {
+        return failedCode;
+    }
+
+    int getSucceedCode() {
+        return succeedCode;
     }
 
     public Context getContext() {
@@ -89,8 +129,12 @@ public class OkUtils {
         return app.getApplicationContext();
     }
 
-    public static void setNetDataImplClass(Class<? extends Response> clazz) {
-        Holder.INSTANCE.mResponseDataClass = clazz;
+    Class<? extends Response> getResponseClass() {
+        return responseClass;
+    }
+
+    public static OkUtils getInstance() {
+        return Holder.INSTANCE;
     }
 
     public static void setLoadingColor(@ColorInt int color) {
@@ -109,37 +153,9 @@ public class OkUtils {
         Holder.INSTANCE.mLoadingDimEnable = enable;
     }
 
-    public static void setFailedText(String text) {
-        Holder.INSTANCE.mFailedText = text;
-    }
-
-    public static void setJsonErrorText(String text) {
-        Holder.INSTANCE.mJsonErrorText = text;
-    }
-
-    public static void setFailedCode(int code) {
-        OkRequest.defaultFailedCode = code;
-    }
-
-    public static void setSucceedCode(int code) {
-        OkRequest.defaultSucceedCode = code;
-    }
-
-    public static void setJsonErrorCode(int code) {
-        Holder.INSTANCE.mJsonErrorCode = code;
-    }
-
-    public static void setHeadersHandler(HeadersHandler handler) {
-        OkRequest.defaultHeadersHandler = handler;
-    }
-
-    public static void setInterceptHandler(InterceptHandler handler) {
-        OkRequest.defaultInterceptHandler = handler;
-    }
-
-    public static void setConvertHandler(ConvertHandler handler) {
-        OkRequest.defaultConvertHandler = handler;
-    }
+    //================================================//
+    //================OkUtils数据请求==================//
+    //================================================//
 
     public static <T> OkRequest<T> toObj(Object obj, Class<T> clazz) {
         return new OkRequest<>(obj, clazz, OkRequest.TYPE_NET_OBJECT);

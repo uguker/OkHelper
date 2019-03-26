@@ -37,7 +37,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return OkRequest.defaultFailedCode;
+                return OkUtils.getInstance().getFailedCode();
             }
 
             @Override
@@ -56,7 +56,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return OkRequest.defaultFailedCode;
+                return OkUtils.getInstance().getFailedCode();
             }
 
             @Override
@@ -75,7 +75,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return OkRequest.defaultFailedCode;
+                return OkUtils.getInstance().getFailedCode();
             }
 
             @Override
@@ -94,7 +94,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return OkRequest.defaultFailedCode;
+                return OkUtils.getInstance().getFailedCode();
             }
 
             @Override
@@ -113,7 +113,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return OkRequest.defaultFailedCode;
+                return OkUtils.getInstance().getFailedCode();
             }
 
             @Override
@@ -133,7 +133,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return OkRequest.defaultSucceedCode;
+                return OkUtils.getInstance().getFailedCode();
             }
 
             @Override

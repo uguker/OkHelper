@@ -2,6 +2,7 @@ package com.uguke.android.okgo;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.support.annotation.ColorInt;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
@@ -19,7 +20,7 @@ import com.lzy.okgo.model.Progress;
 
 import com.lzy.okgo.request.base.BodyRequest;
 import com.lzy.okgo.request.base.Request;
-import com.uguke.okgo.R;
+import com.uguke.android.okgo.R;
 import com.uguke.reflect.TypeBuilder;
 
 import java.io.File;
@@ -37,8 +38,6 @@ import okhttp3.Headers;
  */
 public class OkRequest<T> {
 
-    static final String JSON_PARSE_EXCEPTION = "Json数据解析异常";
-
     /** NetData内嵌Object **/
     static final int TYPE_NET_OBJECT = 0;
     /** NetData内嵌List **/
@@ -48,17 +47,6 @@ public class OkRequest<T> {
     /** String数据 **/
     static final int TYPE_FILE = 3;
     // OkGo请求相关
-
-    static int defaultSucceedCode = 200;
-    static int defaultFailedCode = 300;
-
-    /** 全局过滤器 **/
-    static InterceptHandler defaultInterceptHandler;
-    /** 全局请求头处理器 **/
-    static HeadersHandler defaultHeadersHandler;
-    /** 全局预处理器 **/
-    static ConvertHandler defaultConvertHandler;
-
     private String requestUrl;
     private String mUpJson;
 
@@ -92,14 +80,15 @@ public class OkRequest<T> {
         requestType = type;
         responseDataClass = clazz;
         reference = new WeakReference<>(obj);
+        OkUtils okUtils = OkUtils.getInstance();
         switch (type) {
             case TYPE_NET_OBJECT:
-                responseType = TypeBuilder.newInstance(ResponseImpl.class)
+                responseType = TypeBuilder.newInstance(okUtils.getResponseClass())
                         .addTypeParam(clazz)
                         .build();
                 break;
             case TYPE_NET_LIST:
-                responseType =  TypeBuilder.newInstance(ResponseImpl.class)
+                responseType =  TypeBuilder.newInstance(okUtils.getResponseClass())
                         .beginSubType(List.class)
                         .addTypeParam(clazz)
                         .endSubType()
@@ -116,8 +105,8 @@ public class OkRequest<T> {
         httpParams = new HttpParams();
         httpHeaders = new HttpHeaders();
         responseCodes = new SparseBooleanArray();
-        responseCodes.put(defaultSucceedCode, true);
-        responseCodes.put(defaultFailedCode, false);
+        responseCodes.put(okUtils.getSucceedCode(), true);
+        responseCodes.put(okUtils.getFailedCode(), false);
     }
 
     //================================================//
@@ -328,9 +317,32 @@ public class OkRequest<T> {
         executeForCommon(request, callback);
     }
 
-    public OkRequest<T> loading(Context context) {
+    public OkRequest<T> showLoading(Context context) {
         mLoading = new LoadingDialog(context);
-        mLoading.color(Color.RED);
+        return this;
+    }
+
+    public OkRequest<T> loadingColor(@ColorInt int color) {
+
+        return this;
+    }
+
+    public OkRequest<T> loadingSize(float size) {
+
+        return this;
+    }
+
+    public OkRequest<T> loadingTextColor(@ColorInt int color) {
+
+        return this;
+    }
+
+    public OkRequest<T> loadingTextSize(float size) {
+        return this;
+    }
+
+    public OkRequest<T> loadingDimEnable(boolean enable) {
+
         return this;
     }
 
@@ -398,7 +410,6 @@ public class OkRequest<T> {
                 try {
                     resultResponse = new Gson().fromJson(body, responseType);
                 } catch (JsonParseException e) {
-                    LogUtils.e(body);
                     callback.onFailed(ResponseFactory.<T>createParseJsonException());
                     return;
                 }
@@ -444,6 +455,7 @@ public class OkRequest<T> {
     }
 
     private String convertBody(String body) {
+        ConvertHandler defaultConvertHandler = OkUtils.getInstance().getConvertHandler();
         ConvertHandler validHandler = convertHandler == null ? defaultConvertHandler : convertHandler;
         if (validHandler != null) {
             return validHandler.onHandle(body);
@@ -452,18 +464,14 @@ public class OkRequest<T> {
     }
 
     private boolean handleHeaders(Headers headers) {
+        HeadersHandler defaultHeadersHandler = OkUtils.getInstance().getHeadersHandler();
         HeadersHandler validHandler = headersHandler == null ? defaultHeadersHandler : headersHandler;
-        if (validHandler != null) {
-            return validHandler.onHandle(headers);
-        }
-        return false;
+        return validHandler != null && validHandler.onHandle(headers);
     }
 
     private boolean handleInterceptor(Response<T> response) {
-        if (defaultInterceptHandler != null) {
-            return defaultInterceptHandler.onHandle(response);
-        }
-        return false;
+        InterceptHandler defaultInterceptHandler = OkUtils.getInstance().getInterceptHandler();
+        return defaultInterceptHandler != null && defaultInterceptHandler.onHandle(response);
     }
 
     private boolean isSucceedResponse(Response<T> response) {
@@ -484,10 +492,10 @@ public class OkRequest<T> {
     private void showLoading() {
         if (mLoading != null) {
             OkUtils utils = OkUtils.Holder.INSTANCE;
-            if (utils.mLoadingColor == 0) {
-                utils.mLoadingColor = ContextCompat.getColor(
-                        OkGo.getInstance().getContext(), R.color.colorAccent);
-            }
+//            if (utils.mLoadingColor == 0) {
+//                utils.mLoadingColor = ContextCompat.getColor(
+//                        OkGo.getInstance().getContext(), R.color.colorAccent);
+//            }
             mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
             mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
             mLoading.text(mLoadingText)

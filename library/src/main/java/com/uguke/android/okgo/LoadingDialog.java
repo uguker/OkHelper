@@ -18,7 +18,7 @@ import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.uguke.okgo.R;
+import com.uguke.android.okgo.R;
 
 /**
  * 加载对话框
@@ -98,4 +98,20 @@ public class LoadingDialog extends Dialog {
         return this;
     }
 
+    public void superDismiss() {
+        super.dismiss();
+    }
+
+    @Override
+    public void dismiss() {
+
+        loadingText.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                superDismiss();
+            }
+        }, 1500);
+
+
+    }
 }
