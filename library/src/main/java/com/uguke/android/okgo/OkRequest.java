@@ -1,12 +1,13 @@
 package com.uguke.android.okgo;
 
-import android.content.Context;
-import android.graphics.Color;
+import android.app.Activity;
+import android.app.Fragment;
 import android.support.annotation.ColorInt;
-import android.support.v4.content.ContextCompat;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.SparseBooleanArray;
+import android.view.View;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
@@ -51,7 +52,7 @@ public class OkRequest<T> {
     private String mUpJson;
 
     private Object mTag;
-
+    private FragmentActivity activity;
     private HttpMethod httpMethod;
     private HttpParams httpParams;
     private HttpHeaders httpHeaders;
@@ -317,8 +318,21 @@ public class OkRequest<T> {
         executeForCommon(request, callback);
     }
 
-    public OkRequest<T> showLoading(Context context) {
-        mLoading = new LoadingDialog(context);
+    public OkRequest<T> showLoading(FragmentActivity activity) {
+        mLoading = new LoadingDialog();
+        this.activity = activity;
+        return this;
+    }
+
+    public OkRequest<T> showLoading(Fragment fragment) {
+        mLoading = new LoadingDialog();
+        activity = (FragmentActivity) fragment.getActivity();
+        return this;
+    }
+
+    public OkRequest<T> showLoading(View view) {
+        mLoading = new LoadingDialog();
+        activity = (FragmentActivity) view.getContext();
         return this;
     }
 
@@ -496,19 +510,26 @@ public class OkRequest<T> {
 //                utils.mLoadingColor = ContextCompat.getColor(
 //                        OkGo.getInstance().getContext(), R.color.colorAccent);
 //            }
+
+
             mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
             mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
-            mLoading.text(mLoadingText)
+            mLoading
+                    //.text(mLoadingText)
                     //.size(mLoadingSize)
                     //.color(mLoadingColor)
-                    .dimEnable(mLoadingDimEnable)
-                    .show();
+            //        .dimEnable(mLoadingDimEnable)
+                    .show(activity.getSupportFragmentManager(), "123");
         }
     }
 
     private void dismissLoading() {
-        if (mLoading != null && mLoading.isShowing()) {
-            mLoading.dismiss();
+
+        FragmentManager manager = activity.getSupportFragmentManager();
+
+        LoadingDialog dialog = (LoadingDialog) manager.findFragmentByTag("123");
+        if (dialog != null) {
+            dialog.dismiss();
         }
     }
 }
