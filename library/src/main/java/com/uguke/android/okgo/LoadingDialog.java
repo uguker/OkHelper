@@ -7,6 +7,8 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringRes;
@@ -14,13 +16,13 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.util.DisplayMetrics;
+
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
 /**
  * 加载对话框
  * @author LeiJue
@@ -28,12 +30,20 @@ import android.widget.TextView;
 public class LoadingDialog extends DialogFragment {
 
     private TextView loadingText;
-    private ProgressBar loadingView;
+    private ProgressCircelView loadingView;
 
-    private int duration = 300;
+    private int duration = 2000;
     private boolean waitingForDismiss;
     private ValueAnimator showAnimator;
     private ValueAnimator dismissAnimator;
+
+    private Handler handler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message message) {
+            doDismissAnimator();
+            return false;
+        }
+    });
 
     public LoadingDialog() {
         super();
@@ -67,6 +77,9 @@ public class LoadingDialog extends DialogFragment {
         loadingText = view.findViewById(R.id.ok_text);
         loadingText.setTextColor(Color.parseColor("#F0F0F0"));
         loadingText.setText("加载中");
+        loadingView.setCount(3);
+        loadingView.beginRoute();
+        //loadingView.setProgressDrawable(getResources().getDrawable(R.drawable.ic_launcher));
         color(Color.BLACK);
         doShowAnimator();
         return dialog;
@@ -90,7 +103,7 @@ public class LoadingDialog extends DialogFragment {
         if (color == Color.TRANSPARENT) {
             temp = ContextCompat.getColor(getActivity(), R.color.colorAccent);
         }
-        DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
+        //DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
         return this;
     }
 
@@ -115,12 +128,11 @@ public class LoadingDialog extends DialogFragment {
 
     @Override
     public void dismiss() {
-        waitingForDismiss = showAnimator != null;
         doDismissAnimator();
     }
 
     private void doShowAnimator() {
-        final float startValue = 0.5f;
+        final float startValue = 0f;
         final float endValue = 1f;
         showAnimator = ValueAnimator.ofFloat(startValue, endValue).setDuration(duration);
         showAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -133,21 +145,18 @@ public class LoadingDialog extends DialogFragment {
                 float value = (float) animation.getAnimatedValue();
                 refreshView(loadingView, value);
                 refreshView(loadingText, value);
-                if (value == endValue && waitingForDismiss) {
-                    showAnimator = null;
-                    dismiss();
-                }
             }
         });
         showAnimator.start();
     }
 
     private void doDismissAnimator() {
-        if (waitingForDismiss) {
+        if (showAnimator.isRunning()) {
+            handler.sendEmptyMessageDelayed(0, duration);
             return;
         }
         final float startValue = 1f;
-        final float endValue = 0.5f;
+        final float endValue = 0f;
         dismissAnimator = ValueAnimator.ofFloat(startValue, endValue).setDuration(duration);
         dismissAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -169,8 +178,8 @@ public class LoadingDialog extends DialogFragment {
 
     private void refreshView(View view, float value) {
         view.setAlpha(value);
-        view.setScaleX(value);
-        view.setScaleY(value);
+        //view.setScaleX(value);
+        //view.setScaleY(value);
     }
 
 

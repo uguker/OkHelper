@@ -6,12 +6,15 @@
     android:orientation="vertical"
     android:fitsSystemWindows="true">
 
-    <ProgressBar
+    <!--<ProgressBar-->
+        <!--android:id="@+id/ok_loading"-->
+        <!--style="@style/Widget.AppCompat.ProgressBar"-->
+        <!--android:layout_width="40dp"-->
+        <!--android:layout_height="40dp" />-->
+    <com.uguke.android.okgo.ProgressCircelView
         android:id="@+id/ok_loading"
-        style="@style/Widget.AppCompat.ProgressBar"
         android:layout_width="40dp"
         android:layout_height="40dp" />
-
     <TextView
         android:id="@+id/ok_text"
         android:layout_width="wrap_content"
