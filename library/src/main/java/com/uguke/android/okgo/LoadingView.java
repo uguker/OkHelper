@@ -18,33 +18,36 @@ import android.view.View;
  */
 public class LoadingView extends View {
 
-    private int[] colors;
     private Paint paint;
     private RectF arcRectF;
-
     private int viewWidth;
     private int viewHeight;
     private int squareLength;
-    /** 叶数 **/
-    private int leafCount;
-    /** 叶型圆弧角度间隔 **/
-    private float leafSpace;
-    /** 前进比例 **/
-    private float distance;
-    /** 圆弧宽度 **/
-    private float arcWidth;
+
     /** 开始画弧线的角度 **/
     private float startAngle;
     /** 需要画弧线的角度 **/
     private float sweepAngle;
+    /** 旋转速度 **/
+    private float rotateSpeed;
     /** 正在增加弧线角度 **/
     private boolean addArcAngle;
+
+    /** 叶数 **/
+    private int arcCount;
+    /** 叶型圆弧角度间隔 **/
+    private float arcIntervalAngle;
+    /** 抖动比例 **/
+    private float arcShakeRatio;
+    /** 圆弧宽度 **/
+    private float arcStrokeWidth;
+    /** 圆弧颜色 **/
+    private int[] arcColors;
+
     /** 单页最小角度 **/
     private float minAngle;
     /** 单页增量角度 **/
     private float addAngle;
-    /** 旋转速度 **/
-    private float rotateSpeed;
 
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
@@ -74,15 +77,15 @@ public class LoadingView extends View {
         paint = new Paint();
         paint.setAntiAlias(true);
         arcRectF = new RectF();
-        leafCount = 1;
-        leafSpace = 30;
-        distance = 0.1f;
+        arcCount = 1;
+        arcIntervalAngle = 30;
+        arcShakeRatio = 0.1f;
         addArcAngle = true;
         minAngle = 30;
         addAngle = 270;
         rotateSpeed = 4;
-        colors = new int[] {ContextCompat.getColor(context, R.color.colorAccent)};
-        arcWidth = context.getResources().getDisplayMetrics().density * 3;
+        arcColors = new int[] {ContextCompat.getColor(context, R.color.colorAccent)};
+        arcStrokeWidth = context.getResources().getDisplayMetrics().density * 3;
     }
 
     @Override
@@ -91,27 +94,27 @@ public class LoadingView extends View {
         handler.removeCallbacksAndMessages(null);
     }
 
-    public LoadingView setLeafCount(@IntRange(from = 1) int count) {
-        leafCount = count > 1 ? count : 1;
+    public LoadingView setArcCount(@IntRange(from = 1) int count) {
+        arcCount = count > 1 ? count : 1;
         return this;
     }
 
-    public LoadingView setLeafSpace(float space) {
-        leafSpace = space;
+    public LoadingView setArcIntervalAngle(float space) {
+        arcIntervalAngle = space;
         return this;
     }
 
-    public LoadingView setColors(@ColorInt int... colors) {
+    public LoadingView setArcStrokeWidth(float width) {
+        arcStrokeWidth = getResources().getDisplayMetrics().density * width;
+        return this;
+    }
+
+    public LoadingView setArcColors(@ColorInt int... colors) {
         if (colors.length == 0) {
-            this.colors = new int[] {ContextCompat.getColor(getContext(), R.color.colorAccent)};
+            this.arcColors = new int[] {ContextCompat.getColor(getContext(), R.color.colorAccent)};
         } else {
-            this.colors = colors;
+            this.arcColors = colors;
         }
-        return this;
-    }
-
-    public LoadingView setArcWidth(float width) {
-        arcWidth = getResources().getDisplayMetrics().density * width;
         return this;
     }
 
@@ -134,20 +137,20 @@ public class LoadingView extends View {
     }
 
     /**
-     * 每秒转多少度
-     * @param speed 每秒转多少度
+     * 设置转一圈需要时间
+     * @param time 转一圈需要时间
      */
-    public LoadingView setRotateSpeed(int speed) {
-        rotateSpeed = speed / 100;
+    public LoadingView setRoundUseTime(int time) {
+        rotateSpeed = 360 / time;
         return this;
     }
 
     /**
-     * 设置前进比例(即改变弧的宽度)
-     * @param distance 前进比例
+     * 设置抖动比例(即改变弧的宽度)
+     * @param ratio 抖动比例
      */
-    public LoadingView setDistance(float distance) {
-        this.distance = distance;
+    public LoadingView setArcShakeRatio(float ratio) {
+        this.arcShakeRatio = ratio;
         return this;
     }
 
@@ -163,13 +166,12 @@ public class LoadingView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         // 刷新圆弧角度
-        refreshStartAngle();
-        refreshSweepAngle();
-        for (int i = 0; i < leafCount; i++) {
-            paint.setColor(colors[i % colors.length]);
+        refreshArcAngle();
+        for (int i = 0; i < arcCount; i++) {
+            paint.setColor(arcColors[i % arcColors.length]);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(getArcWidth());
-            float startDegree = startAngle + i * (360 / leafCount);
+            paint.setStrokeWidth(getRealArcStrokeWidth());
+            float startDegree = startAngle + i * (360 / arcCount);
             drawArc(canvas, startDegree, sweepAngle);
         }
     }
@@ -186,10 +188,10 @@ public class LoadingView extends View {
         float endAngle = startAngle + sweepAngle;
         int length = Math.min(viewWidth, viewHeight);
         arcRectF.set(
-                Math.abs(length - viewWidth) / 2 + getArcWidth(),
-                Math.abs(length - viewHeight) / 2 + getArcWidth(),
-                Math.abs(length - viewWidth) / 2 + length - getArcWidth(),
-                Math.abs(length - viewHeight) / 2 + length - getArcWidth());
+                Math.abs(length - viewWidth) / 2 + getRealArcStrokeWidth(),
+                Math.abs(length - viewHeight) / 2 + getRealArcStrokeWidth(),
+                Math.abs(length - viewWidth) / 2 + length - getRealArcStrokeWidth(),
+                Math.abs(length - viewHeight) / 2 + length - getRealArcStrokeWidth());
         // 画圆弧
         canvas.drawArc(arcRectF, startAngle, sweepAngle, false, paint);
         float startX = (float) ((1.0 + Math.cos(Math.PI * startAngle / 180))) / 2 * arcRectF.width() + arcRectF.left;
@@ -198,26 +200,25 @@ public class LoadingView extends View {
         float endY = (float) ((1.0 + Math.sin(Math.PI * endAngle / 180))) / 2 * arcRectF.height() + arcRectF.top;
         paint.setStyle(Paint.Style.FILL);
         // 画两个圆圈去掉菱角
-        canvas.drawCircle(startX, startY, getArcWidth() / 2, paint);
-        canvas.drawCircle(endX, endY, getArcWidth() / 2, paint);
+        canvas.drawCircle(startX, startY, getRealArcStrokeWidth() / 2, paint);
+        canvas.drawCircle(endX, endY, getRealArcStrokeWidth() / 2, paint);
     }
 
-    private void refreshStartAngle() {
+    private void refreshArcAngle() {
+        // 开始的幅度角度
         startAngle += addArcAngle ? rotateSpeed : rotateSpeed * 2;
-    }
-
-    private void refreshSweepAngle() {
-        if (leafCount > 1) {
-            sweepAngle = (360 / leafCount - leafSpace);
+        if (arcCount > 1) {
+            sweepAngle = (360 / arcCount - arcIntervalAngle);
             sweepAngle = (int) (sweepAngle - sweepAngle / 2 * getRouteNumber());
         } else {
-            sweepAngle += addArcAngle ? rotateSpeed : - rotateSpeed;
+            // 需要画的弧度
+            sweepAngle += addArcAngle ? rotateSpeed : -rotateSpeed;
             addArcAngle = addArcAngle ? sweepAngle < minAngle + addAngle : sweepAngle <= minAngle;
         }
     }
 
-    private float getArcWidth() {
-        return getRouteNumber() * squareLength * (leafCount > 1 ? distance : 0) + arcWidth;
+    private float getRealArcStrokeWidth() {
+        return getRouteNumber() * squareLength * (arcCount > 1 ? arcShakeRatio : 0) + arcStrokeWidth;
     }
 
     /**

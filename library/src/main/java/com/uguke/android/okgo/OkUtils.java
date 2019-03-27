@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
 import android.support.annotation.ColorInt;
+import android.support.v4.app.DialogFragment;
 
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.cache.CacheMode;
@@ -45,6 +46,8 @@ public class OkUtils {
     /** 全局加密处理器 **/
     private EncryptHandler encryptHandler;
 
+    private Loading<? extends DialogFragment> loading;
+
     static class Holder {
         @SuppressLint("StaticFieldLeak")
         static final OkUtils INSTANCE = new OkUtils();
@@ -54,6 +57,7 @@ public class OkUtils {
         mLoadingSize = 60;
         loadingClass = LoadingDialog.class;
         responseClass = ResponseImpl.class;
+        loading = new LoadingDialog();
     }
 
     public OkUtils init(Application app) {
@@ -117,6 +121,15 @@ public class OkUtils {
         return this;
     }
 
+    public OkUtils setLoading(Loading<? extends DialogFragment> loading) {
+        this.loading = loading;
+        return this;
+    }
+
+    Loading<? extends DialogFragment> getLoading() {
+        return loading;
+    }
+
     ConvertHandler getConvertHandler() {
         return convertHandler;
     }
@@ -149,29 +162,6 @@ public class OkUtils {
     Class<? extends Response> getResponseClass() {
         return responseClass;
     }
-
-
-
-    public OkUtils setLoadingColor(@ColorInt int color) {
-        Holder.INSTANCE.mLoadingColor = color;
-        return this;
-    }
-
-    public OkUtils setLoadingSize(float size) {
-        Holder.INSTANCE.mLoadingSize = size;
-        return this;
-    }
-
-    public OkUtils setLoadingText(String text) {
-        Holder.INSTANCE.mLoadingText = text;
-        return this;
-    }
-
-    public OkUtils setLoadingDimEnable(boolean enable) {
-        Holder.INSTANCE.mLoadingDimEnable = enable;
-        return this;
-    }
-
 
     public static OkUtils getInstance() {
         return Holder.INSTANCE;

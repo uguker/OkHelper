@@ -7,10 +7,10 @@ import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
 import com.uguke.android.okgo.ConvertHandler;
 import com.uguke.android.okgo.EncryptHandler;
+import com.uguke.android.okgo.LoadingDialog;
 import com.uguke.android.okgo.OkUtils;
 import com.uguke.android.okgo.ResponseImpl;
 
-import javax.xml.transform.OutputKeys;
 
 public class App extends Application {
 
@@ -42,7 +42,8 @@ public class App extends Application {
                     public HttpParams onHandle(HttpParams params) {
                         return params;
                     }
-                });
+                })
+                .setLoading(new LoadingDialog());
     }
 
     @Override

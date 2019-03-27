@@ -1,6 +1,7 @@
 package com.uguke.demo.okgo;
 
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
@@ -46,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
                 //.get("https://api2.bmob.cn/1/classes/AppVersion")
                 .params("1", "1")
                 .showLoading(this)
+                .loadingColors(Color.BLACK)
                 .succeedCodes(0, 200)
-
                 .execute(new Callback<Response<String>>() {
                     @Override
                     public void onSucceed(Response<String> response) {

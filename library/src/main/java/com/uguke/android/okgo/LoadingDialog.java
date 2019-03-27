@@ -10,10 +10,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.ColorInt;
+import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
-import android.support.annotation.StringRes;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.content.ContextCompat;
+import android.support.v4.app.FragmentActivity;
 import android.util.DisplayMetrics;
 
 import android.view.Gravity;
@@ -22,31 +22,48 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 /**
  * 加载对话框
  * @author LeiJue
  */
 public class LoadingDialog extends DialogFragment implements Loading<LoadingDialog> {
 
-    private TextView loadingText;
-    private LoadingView loadingView;
+    private float minAngle;
+    private float addAngle;
 
-    private int duration = 2000;
-    private boolean waitingForDismiss;
+    private int arcCount;
+    private float arcIntervalAngle;
+    private float arcShakeRatio;
+    private float arcStrokeWidth;
+    private int [] arcColors;
+    private int roundUseTime;
+
+    private LoadingView loadingView;
+    private float loadingSize;
+
+    private int duration = 500;
     private ValueAnimator showAnimator;
     private ValueAnimator dismissAnimator;
 
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message message) {
-            //doDismissAnimator();
+            doDismissAnimator();
             return false;
         }
     });
 
     public LoadingDialog() {
         super();
+        loadingSize = 40;
+        arcCount = 1;
+        arcIntervalAngle = 30;
+        arcShakeRatio = 0.1f;
+        arcStrokeWidth = 3;
+        minAngle = 30;
+        addAngle = 270;
+        roundUseTime = 100;
+        arcColors = new int[]{};
     }
 
     @Override
@@ -69,94 +86,104 @@ public class LoadingDialog extends DialogFragment implements Loading<LoadingDial
         DisplayMetrics dm = Resources.getSystem().getDisplayMetrics();
         int width = dm.widthPixels;
         int height = dm.heightPixels;
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(width, height);
-        //View view = View.inflate(getActivity(), R.layout.dlg_ok_loading, null);
-        FrameLayout view = new FrameLayout(getContext());
-
-        FrameLayout.LayoutParams params2 = new FrameLayout.LayoutParams(120, 120);
-        params2.gravity = Gravity.CENTER;
+        // 设置布局控件
+        FrameLayout view = new FrameLayout(getActivity());
+        dialog.setContentView(view, new ViewGroup.LayoutParams(width, height));
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                (int) (dm.density * loadingSize), (int) (dm.density * loadingSize));
+        params.gravity = Gravity.CENTER;
         // 获取控件
         loadingView = new LoadingView(getActivity());
-        loadingView.setLayoutParams(params2);
+        loadingView.setLayoutParams(params);
+        loadingView.setArcColors(arcColors)
+                .setArcCount(arcCount)
+                .setArcIntervalAngle(arcIntervalAngle)
+                .setArcShakeRatio(arcShakeRatio)
+                .setArcStrokeWidth(arcStrokeWidth)
+                .setMinAngle(minAngle)
+                .setAddAngle(addAngle)
+                .setRoundUseTime(roundUseTime)
+                .start();
         view.addView(loadingView);
-        dialog.setContentView(view, params);
-        //loadingView.setColors(Color.BLACK, Color.BLUE);
-        loadingView.setColors(Color.BLACK, Color.BLUE, Color.RED);
-
-        loadingView.setLeafCount(1);
-        loadingView.setLeafSpace(30);
-        loadingView.setArcWidth(5);
-        loadingView.setRotateSpeed(100);
-        //loadingView.setColors(Color.BLACK);
-        loadingView.start();
-        //color(Color.BLACK);
         doShowAnimator();
         return dialog;
     }
 
-    public LoadingDialog dimEnable(boolean enable) {
-        if (enable) {
-            //mWindow.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            //contentView.setBackgroundColor(Color.parseColor("#22888888"));
-            loadingText.setTextColor(Color.parseColor("#F0F0F0"));
-        } else {
-            //mWindow.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            //contentView.setBackgroundColor(Color.TRANSPARENT);
-            loadingText.setTextColor(Color.parseColor("#999999"));
-        }
+    public LoadingDialog arcCount(@IntRange(from = 1) int count) {
+        arcCount = count > 1 ? count : 1;
         return this;
     }
 
-//    @Override
-//    public LoadingDialog color(@ColorInt int color) {
-//        int temp = color;
-//        if (color == Color.TRANSPARENT) {
-//            temp = ContextCompat.getColor(getActivity(), R.color.colorAccent);
-//        }
-//        //DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
-//        return this;
-//    }
-
-    public LoadingDialog text(CharSequence text) {
-        loadingText.setText(text);
+    public LoadingDialog arcIntervalAngle(float angle) {
+        arcIntervalAngle = angle;
         return this;
     }
 
-    public LoadingDialog text(@StringRes int resId) {
-        loadingText.setText(resId);
+    public LoadingDialog arcShakeRatio(float ratio) {
+        this.arcShakeRatio = ratio;
         return this;
     }
 
-    public LoadingDialog size(float size) {
-        float density = getActivity().getResources().getDisplayMetrics().density;
-        loadingView.getLayoutParams().width = (int) (size * density);
-        loadingView.getLayoutParams().height = (int) (size * density);
-        loadingText.setTextSize(size / 4);
-        loadingText.setPadding(0, (int) (size / 10 * density), 0, 0);
+    public LoadingDialog arcStrokeWidth(float width) {
+        arcStrokeWidth = width;
         return this;
+    }
+
+    public LoadingDialog arcColors(@ColorInt int... colors) {
+        arcColors = colors;
+        return this;
+    }
+
+    /**
+     * 设置最小角度（仅对叶数为1有效）
+     * @param min 最小角度
+     */
+    public LoadingDialog minAngle(float min) {
+        minAngle = min;
+        return this;
+    }
+
+    /**
+     * 设置增量角度（仅对叶数为1有效）
+     * @param add 增量角度
+     */
+    public LoadingDialog addAngle(float add) {
+        addAngle = add;
+        return this;
+    }
+
+    /**
+     * 设置转一圈需要时间
+     * @param time 转一圈需要时间
+     */
+    public LoadingDialog roundUseTime(int time) {
+        roundUseTime = time;
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T size(float size) {
+        loadingSize = size;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T colors(int... color) {
+        arcColors = color;
+        return (T) this;
     }
 
     @Override
-    public void show(Context context) {
-
+    public void show(FragmentActivity activity, String tag) {
+        show(activity.getSupportFragmentManager(), tag);
     }
 
     @Override
     public void dismiss() {
-        //doDismissAnimator();
+        doDismissAnimator();
     }
-
-    @Override
-    public <T> T color(int color) {
-                int temp = color;
-        if (color == Color.TRANSPARENT) {
-            temp = ContextCompat.getColor(getActivity(), R.color.colorAccent);
-        }
-        //DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
-
-        return (T) this;
-    }
-
 
     private void doShowAnimator() {
         final float startValue = 0.3f;

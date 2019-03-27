@@ -2,6 +2,7 @@ package com.uguke.android.okgo;
 
 import android.app.Fragment;
 import android.support.annotation.ColorInt;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
@@ -37,6 +38,8 @@ import okhttp3.Headers;
  */
 public class OkRequest<T> {
 
+    private static final String TAG_DIALOG = "tag_dialog";
+
     /** NetData内嵌Object **/
     static final int TYPE_NET_OBJECT = 0;
     /** NetData内嵌List **/
@@ -46,8 +49,8 @@ public class OkRequest<T> {
     /** String数据 **/
     static final int TYPE_FILE = 3;
 
-    static final String TAG_DIALOG = "tag_dialog";
     // OkGo请求相关
+    
     private String requestUrl;
     private String mUpJson;
 
@@ -62,12 +65,6 @@ public class OkRequest<T> {
 
     private int requestType;
     // Loading对话框相关
-
-    private int mLoadingColor;
-    private float mLoadingSize;
-    private String mLoadingText;
-    private boolean mLoadingDimEnable;
-    private LoadingDialog mLoading;
 
     private SparseBooleanArray responseCodes;
     private ConvertHandler convertHandler;
@@ -322,44 +319,30 @@ public class OkRequest<T> {
     }
 
     public OkRequest<T> showLoading(FragmentActivity activity) {
-        mLoading = new LoadingDialog();
+        //mLoading = new LoadingDialog();
         this.activity = activity;
         return this;
     }
 
     public OkRequest<T> showLoading(Fragment fragment) {
-        mLoading = new LoadingDialog();
+        //mLoading = new LoadingDialog();
         activity = (FragmentActivity) fragment.getActivity();
         return this;
     }
 
     public OkRequest<T> showLoading(View view) {
-        mLoading = new LoadingDialog();
+        //mLoading = new LoadingDialog();
         activity = (FragmentActivity) view.getContext();
         return this;
     }
 
-    public OkRequest<T> loadingColor(@ColorInt int color) {
-
+    public OkRequest<T> loadingColors(@ColorInt int... colors) {
+        OkUtils.getInstance().getLoading().colors(colors);
         return this;
     }
 
     public OkRequest<T> loadingSize(float size) {
-
-        return this;
-    }
-
-    public OkRequest<T> loadingTextColor(@ColorInt int color) {
-
-        return this;
-    }
-
-    public OkRequest<T> loadingTextSize(float size) {
-        return this;
-    }
-
-    public OkRequest<T> loadingDimEnable(boolean enable) {
-
+        OkUtils.getInstance().getLoading().size(size);
         return this;
     }
 
@@ -520,30 +503,23 @@ public class OkRequest<T> {
     }
 
     private void showLoading() {
-        if (mLoading != null) {
-            OkUtils utils = OkUtils.Holder.INSTANCE;
-//            if (utils.mLoadingColor == 0) {
-//                utils.mLoadingColor = ContextCompat.getColor(
-//                        OkGo.getInstance().getContext(), R.color.colorAccent);
-//            }
-
-
-            mLoadingText = TextUtils.isEmpty(mLoadingText) ? utils.mLoadingText : mLoadingText;
-            mLoadingSize = mLoadingSize == 0 ? utils.mLoadingSize : mLoadingSize;
-            mLoading
-                    //.text(mLoadingText)
-                    //.size(mLoadingSize)
-                    //.color(mLoadingColor)
-            //        .dimEnable(mLoadingDimEnable)
-                    .show(activity.getSupportFragmentManager(), TAG_DIALOG);
+        if (activity == null) {
+            return;
+        }
+        Loading<? extends DialogFragment> loading = OkUtils.getInstance().getLoading();
+        if (loading != null) {
+            if (!((DialogFragment) loading).isAdded()) {
+                loading.show(activity, TAG_DIALOG);
+            }
         }
     }
 
     private void dismissLoading() {
-
+        if (activity == null) {
+            return;
+        }
         FragmentManager manager = activity.getSupportFragmentManager();
-
-        LoadingDialog dialog = (LoadingDialog) manager.findFragmentByTag(TAG_DIALOG);
+        DialogFragment dialog = (DialogFragment) manager.findFragmentByTag(TAG_DIALOG);
         if (dialog != null) {
             dialog.dismiss();
         }
