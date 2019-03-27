@@ -33,14 +33,17 @@ public class OkUtils {
     private int failedCode;
     private int succeedCode;
     private Application app;
+    private Class<? extends Loading> loadingClass;
     private Class<? extends Response> responseClass;
 
     /** 全局过滤器 **/
-    private InterceptHandler interceptHandler;
+    private ResponseInterceptor responseInterceptor;
     /** 全局请求头处理器 **/
-    private HeadersHandler headersHandler;
+    private HeadersInterceptor headersInterceptor;
     /** 全局预处理器 **/
     private ConvertHandler convertHandler;
+    /** 全局加密处理器 **/
+    private EncryptHandler encryptHandler;
 
     static class Holder {
         @SuppressLint("StaticFieldLeak")
@@ -49,6 +52,7 @@ public class OkUtils {
 
     private OkUtils() {
         mLoadingSize = 60;
+        loadingClass = LoadingDialog.class;
         responseClass = ResponseImpl.class;
     }
 
@@ -89,31 +93,44 @@ public class OkUtils {
         return this;
     }
 
-    public OkUtils setHeadersHandler(HeadersHandler handler) {
-        headersHandler = handler;
-        return this;
-    }
-
-    public OkUtils setInterceptHandler(InterceptHandler handler) {
-        interceptHandler = handler;
-        return this;
-    }
+    //================================================//
+    //============OkUtils拦截器处理器部分==============//
+    //================================================//
 
     public OkUtils setConvertHandler(ConvertHandler handler) {
         convertHandler = handler;
         return this;
     }
 
-    HeadersHandler getHeadersHandler() {
-        return headersHandler;
+    public OkUtils setEncryptHandler(EncryptHandler handler) {
+        encryptHandler = handler;
+        return this;
     }
 
-    InterceptHandler getInterceptHandler() {
-        return interceptHandler;
+    public OkUtils setHeadersInterceptor(HeadersInterceptor interceptor) {
+        headersInterceptor = interceptor;
+        return this;
+    }
+
+    public OkUtils setResponseInterceptor(ResponseInterceptor interceptor) {
+        responseInterceptor = interceptor;
+        return this;
     }
 
     ConvertHandler getConvertHandler() {
         return convertHandler;
+    }
+
+    EncryptHandler getEncryptHandler() {
+        return encryptHandler;
+    }
+
+    HeadersInterceptor getHeadersInterceptor() {
+        return headersInterceptor;
+    }
+
+    ResponseInterceptor getResponseInterceptor() {
+        return responseInterceptor;
     }
 
     int getFailedCode() {
@@ -133,24 +150,31 @@ public class OkUtils {
         return responseClass;
     }
 
+
+
+    public OkUtils setLoadingColor(@ColorInt int color) {
+        Holder.INSTANCE.mLoadingColor = color;
+        return this;
+    }
+
+    public OkUtils setLoadingSize(float size) {
+        Holder.INSTANCE.mLoadingSize = size;
+        return this;
+    }
+
+    public OkUtils setLoadingText(String text) {
+        Holder.INSTANCE.mLoadingText = text;
+        return this;
+    }
+
+    public OkUtils setLoadingDimEnable(boolean enable) {
+        Holder.INSTANCE.mLoadingDimEnable = enable;
+        return this;
+    }
+
+
     public static OkUtils getInstance() {
         return Holder.INSTANCE;
-    }
-
-    public static void setLoadingColor(@ColorInt int color) {
-        Holder.INSTANCE.mLoadingColor = color;
-    }
-
-    public static void setLoadingSize(float size) {
-        Holder.INSTANCE.mLoadingSize = size;
-    }
-
-    public static void setLoadingText(String text) {
-        Holder.INSTANCE.mLoadingText = text;
-    }
-
-    public static void setLoadingDimEnable(boolean enable) {
-        Holder.INSTANCE.mLoadingDimEnable = enable;
     }
 
     //================================================//
@@ -185,63 +209,71 @@ public class OkUtils {
     //=================OkGo自带方法===================//
     //================================================//
 
-    public static void addCommonParams(HttpParams commonParams) {
+    public OkUtils addCommonParams(HttpParams commonParams) {
         OkGo.getInstance().addCommonParams(commonParams);
+        return this;
     }
 
-    public static void addCommonHeaders(HttpHeaders commonHeaders) {
+    public OkUtils addCommonHeaders(HttpHeaders commonHeaders) {
         OkGo.getInstance().addCommonHeaders(commonHeaders);
+        return this;
     }
 
-    public static void setOkHttpClient(OkHttpClient client) {
+    public OkUtils setOkHttpClient(OkHttpClient client) {
         OkGo.getInstance().setOkHttpClient(client);
+        return this;
     }
 
-    public static void setCacheMode(CacheMode mode) {
+    public OkUtils setCacheMode(CacheMode mode) {
         OkGo.getInstance().setCacheMode(mode);
+        return this;
     }
 
-    public static void setCacheTime(long time) {
+    public OkUtils setCacheTime(long time) {
         OkGo.getInstance().setCacheTime(time);
+        return this;
     }
 
-    public static void setRetryCount(int count) {
+    public OkUtils setRetryCount(int count) {
         OkGo.getInstance().setRetryCount(count);
+        return this;
     }
 
-    public static void cancel(Object tag) {
+    public OkUtils cancelTag(Object tag) {
         OkGo.getInstance().cancelTag(tag);
+        return this;
     }
 
-    public static void cancelAll() {
+    public OkUtils cancelAll() {
         OkGo.getInstance().cancelAll();
+        return this;
     }
 
-    public static HttpParams getCommonParams() {
+    public HttpParams getCommonParams() {
         return OkGo.getInstance().getCommonParams();
     }
 
-    public static HttpHeaders getCommonHeaders() {
+    public HttpHeaders getCommonHeaders() {
         return OkGo.getInstance().getCommonHeaders();
     }
 
-    public static CookieJarImpl getCookieJar() {
+    public CookieJarImpl getCookieJar() {
         return OkGo.getInstance().getCookieJar();
     }
 
-    public static OkHttpClient getOkHttpClient() {
+    public OkHttpClient getOkHttpClient() {
         return OkGo.getInstance().getOkHttpClient();
     }
 
-    public static CacheMode getCacheMode() {
+    public CacheMode getCacheMode() {
         return OkGo.getInstance().getCacheMode();
     }
 
-    public static int getRetryCount() {
+    public int getRetryCount() {
         return OkGo.getInstance().getRetryCount();
     }
 
-    public static long getCacheTime() {
+    public long getCacheTime() {
         return OkGo.getInstance().getCacheTime();
     }
 

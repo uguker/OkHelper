@@ -16,16 +16,18 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.util.DisplayMetrics;
 
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 /**
  * 加载对话框
  * @author LeiJue
  */
-public class LoadingDialog extends DialogFragment {
+public class LoadingDialog extends DialogFragment implements Loading<LoadingDialog> {
 
     private TextView loadingText;
     private LoadingView loadingView;
@@ -38,7 +40,7 @@ public class LoadingDialog extends DialogFragment {
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message message) {
-            doDismissAnimator();
+            //doDismissAnimator();
             return false;
         }
     });
@@ -68,17 +70,26 @@ public class LoadingDialog extends DialogFragment {
         int width = dm.widthPixels;
         int height = dm.heightPixels;
         ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(width, height);
-        View view = View.inflate(getActivity(), R.layout.dlg_ok_loading, null);
-        dialog.setContentView(view, params);
+        //View view = View.inflate(getActivity(), R.layout.dlg_ok_loading, null);
+        FrameLayout view = new FrameLayout(getContext());
+
+        FrameLayout.LayoutParams params2 = new FrameLayout.LayoutParams(120, 120);
+        params2.gravity = Gravity.CENTER;
         // 获取控件
-        loadingView = view.findViewById(R.id.ok_loading);
-        loadingText = view.findViewById(R.id.ok_text);
-        loadingText.setTextColor(Color.parseColor("#F0F0F0"));
-        loadingText.setText("加载中");
-        loadingView.setCount(3);
-        loadingView.beginRoute();
-        //loadingView.setProgressDrawable(getResources().getDrawable(R.drawable.ic_launcher));
-        color(Color.BLACK);
+        loadingView = new LoadingView(getActivity());
+        loadingView.setLayoutParams(params2);
+        view.addView(loadingView);
+        dialog.setContentView(view, params);
+        //loadingView.setColors(Color.BLACK, Color.BLUE);
+        loadingView.setColors(Color.BLACK, Color.BLUE, Color.RED);
+
+        loadingView.setLeafCount(1);
+        loadingView.setLeafSpace(30);
+        loadingView.setArcWidth(5);
+        loadingView.setRotateSpeed(100);
+        //loadingView.setColors(Color.BLACK);
+        loadingView.start();
+        //color(Color.BLACK);
         doShowAnimator();
         return dialog;
     }
@@ -96,14 +107,15 @@ public class LoadingDialog extends DialogFragment {
         return this;
     }
 
-    public LoadingDialog color(@ColorInt int color) {
-        int temp = color;
-        if (color == Color.TRANSPARENT) {
-            temp = ContextCompat.getColor(getActivity(), R.color.colorAccent);
-        }
-        //DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
-        return this;
-    }
+//    @Override
+//    public LoadingDialog color(@ColorInt int color) {
+//        int temp = color;
+//        if (color == Color.TRANSPARENT) {
+//            temp = ContextCompat.getColor(getActivity(), R.color.colorAccent);
+//        }
+//        //DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
+//        return this;
+//    }
 
     public LoadingDialog text(CharSequence text) {
         loadingText.setText(text);
@@ -125,12 +137,29 @@ public class LoadingDialog extends DialogFragment {
     }
 
     @Override
-    public void dismiss() {
-        doDismissAnimator();
+    public void show(Context context) {
+
     }
 
+    @Override
+    public void dismiss() {
+        //doDismissAnimator();
+    }
+
+    @Override
+    public <T> T color(int color) {
+                int temp = color;
+        if (color == Color.TRANSPARENT) {
+            temp = ContextCompat.getColor(getActivity(), R.color.colorAccent);
+        }
+        //DrawableCompat.setTint(loadingView.getIndeterminateDrawable(), temp);
+
+        return (T) this;
+    }
+
+
     private void doShowAnimator() {
-        final float startValue = 0f;
+        final float startValue = 0.3f;
         final float endValue = 1f;
         showAnimator = ValueAnimator.ofFloat(startValue, endValue).setDuration(duration);
         showAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
@@ -142,7 +171,6 @@ public class LoadingDialog extends DialogFragment {
                 }
                 float value = (float) animation.getAnimatedValue();
                 refreshView(loadingView, value);
-                refreshView(loadingText, value);
             }
         });
         showAnimator.start();
@@ -154,7 +182,7 @@ public class LoadingDialog extends DialogFragment {
             return;
         }
         final float startValue = 1f;
-        final float endValue = 0f;
+        final float endValue = 0.0f;
         dismissAnimator = ValueAnimator.ofFloat(startValue, endValue).setDuration(duration);
         dismissAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -165,7 +193,6 @@ public class LoadingDialog extends DialogFragment {
                 }
                 float value = (float) animation.getAnimatedValue();
                 refreshView(loadingView, value);
-                refreshView(loadingText, value);
                 if (value == endValue) {
                     LoadingDialog.super.dismiss();
                 }

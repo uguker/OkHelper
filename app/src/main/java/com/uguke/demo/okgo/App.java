@@ -4,6 +4,9 @@ import android.app.Application;
 
 import com.alibaba.android.arouter.launcher.ARouter;
 import com.lzy.okgo.model.HttpHeaders;
+import com.lzy.okgo.model.HttpParams;
+import com.uguke.android.okgo.ConvertHandler;
+import com.uguke.android.okgo.EncryptHandler;
 import com.uguke.android.okgo.OkUtils;
 import com.uguke.android.okgo.ResponseImpl;
 
@@ -17,17 +20,29 @@ public class App extends Application {
         ARouter.init(this);
         ARouter.openLog();
         ARouter.openDebug();
-        OkUtils.getInstance().init(this);
         HttpHeaders headers = new HttpHeaders();
         headers.put("X-Bmob-Application-Id", "c64afbe25c179804bedb128bb2a7b73b");
         headers.put("X-Bmob-REST-API-Key", "bddfd9994878419feca3987943ad05ef");
         headers.put("Content-Type", "application/json");
-        OkUtils.addCommonHeaders(headers);
         OkUtils.getInstance()
+                .init(this)
                 .openDebug()
                 .setFailedCode(100)
                 .setSucceedCode(100)
-                .setResponseClass(ResponseImpl.class);
+                .setResponseClass(ResponseImpl.class)
+                .addCommonHeaders(headers)
+                .setConvertHandler(new ConvertHandler() {
+                    @Override
+                    public String onHandle(String body) {
+                        return body;
+                    }
+                })
+                .setEncryptHandler(new EncryptHandler() {
+                    @Override
+                    public HttpParams onHandle(HttpParams params) {
+                        return params;
+                    }
+                });
     }
 
     @Override

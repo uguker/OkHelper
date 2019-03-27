@@ -20,7 +20,6 @@ import com.lzy.okgo.model.Progress;
 
 import com.lzy.okgo.request.base.BodyRequest;
 import com.lzy.okgo.request.base.Request;
-import com.uguke.android.okgo.R;
 import com.uguke.reflect.TypeBuilder;
 
 import java.io.File;
@@ -71,9 +70,9 @@ public class OkRequest<T> {
     private LoadingDialog mLoading;
 
     private SparseBooleanArray responseCodes;
-    private InterceptHandler filtersHandler;
-    private HeadersHandler headersHandler;
     private ConvertHandler convertHandler;
+    private EncryptHandler encryptHandler;
+    private HeadersInterceptor headersInterceptor;
 
     /** 用来防止空指针 **/
     private Reference<Object> reference;
@@ -262,13 +261,18 @@ public class OkRequest<T> {
         return this;
     }
 
-    public OkRequest<T> headersHandler(HeadersHandler handler) {
-        headersHandler = handler;
+    public OkRequest<T> convertHandler(ConvertHandler handler) {
+        convertHandler = handler;
         return this;
     }
 
-    public OkRequest<T> convertHandler(ConvertHandler handler) {
-        convertHandler = handler;
+    public OkRequest<T> encryptHandler(EncryptHandler handler) {
+        encryptHandler = handler;
+        return this;
+    }
+
+    public OkRequest<T> headersInterceptor(HeadersInterceptor interceptor) {
+        headersInterceptor = interceptor;
         return this;
     }
 
@@ -310,12 +314,10 @@ public class OkRequest<T> {
             default:
                 request = OkGo.get(requestUrl);
         }
-        if (!TextUtils.isEmpty(mUpJson) && request instanceof BodyRequest) {
-            ((BodyRequest<String, BodyRequest>) request).upJson(mUpJson);
-        }
+        upData(request);
         request.tag(mTag);
-        request.params(httpParams);
         request.headers(httpHeaders);
+        request.params(handleEncrypt(httpParams));
         executeForCommon(request, callback);
     }
 
@@ -359,6 +361,13 @@ public class OkRequest<T> {
     public OkRequest<T> loadingDimEnable(boolean enable) {
 
         return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void upData(Request<String, ?> request) {
+        if (!TextUtils.isEmpty(mUpJson) && request instanceof BodyRequest) {
+            ((BodyRequest<String, BodyRequest>) request).upJson(mUpJson);
+        }
     }
 
     private void executeForFile(final Request<File, ?> request, final Callback<Response<T>> callback) {
@@ -415,9 +424,9 @@ public class OkRequest<T> {
                     callback.onSucceed(ResponseFactory.<T>createResponseBody(body));
                     return;
                 }
-                body = convertBody(body);
+                body = handleConvert(body);
                 Headers headers = response.headers();
-                if (handleHeaders(headers)) {
+                if (interceptHeaders(headers)) {
                     callback.onFailed(ResponseFactory.<T>createHandledHeaders());
                     return;
                 }
@@ -432,7 +441,7 @@ public class OkRequest<T> {
                     callback.onFailed(ResponseFactory.<T>createEmptyResponse());
                     return;
                 }
-                if (handleInterceptor(resultResponse)) {
+                if (interceptResponse(resultResponse)) {
                     callback.onFailed(ResponseFactory.<T>createInterceptResponse());
                     return;
                 }
@@ -469,7 +478,7 @@ public class OkRequest<T> {
         });
     }
 
-    private String convertBody(String body) {
+    private String handleConvert(String body) {
         ConvertHandler defaultConvertHandler = OkUtils.getInstance().getConvertHandler();
         ConvertHandler validHandler = convertHandler == null ? defaultConvertHandler : convertHandler;
         if (validHandler != null) {
@@ -478,15 +487,21 @@ public class OkRequest<T> {
         return body;
     }
 
-    private boolean handleHeaders(Headers headers) {
-        HeadersHandler defaultHeadersHandler = OkUtils.getInstance().getHeadersHandler();
-        HeadersHandler validHandler = headersHandler == null ? defaultHeadersHandler : headersHandler;
-        return validHandler != null && validHandler.onHandle(headers);
+    private HttpParams handleEncrypt(HttpParams params) {
+        EncryptHandler defaultHandler = OkUtils.getInstance().getEncryptHandler();
+        EncryptHandler validHandler = encryptHandler == null ? defaultHandler : encryptHandler;
+        return validHandler == null ? params : validHandler.onHandle(params);
     }
 
-    private boolean handleInterceptor(Response<T> response) {
-        InterceptHandler defaultInterceptHandler = OkUtils.getInstance().getInterceptHandler();
-        return defaultInterceptHandler != null && defaultInterceptHandler.onHandle(response);
+    private boolean interceptHeaders(Headers headers) {
+        HeadersInterceptor defaultInterceptor = OkUtils.getInstance().getHeadersInterceptor();
+        HeadersInterceptor validInterceptor = headersInterceptor == null ? defaultInterceptor : headersInterceptor;
+        return validInterceptor != null && validInterceptor.onIntercept(headers);
+    }
+
+    private boolean interceptResponse(Response<T> response) {
+        ResponseInterceptor defaultInterceptor = OkUtils.getInstance().getResponseInterceptor();
+        return defaultInterceptor != null && defaultInterceptor.onIntercept(response);
     }
 
     private boolean isSucceedResponse(Response<T> response) {
