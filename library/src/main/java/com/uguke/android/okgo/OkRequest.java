@@ -50,7 +50,7 @@ public class OkRequest<T> {
     static final int TYPE_FILE = 3;
 
     // OkGo请求相关
-    
+
     private String requestUrl;
     private String mUpJson;
 
