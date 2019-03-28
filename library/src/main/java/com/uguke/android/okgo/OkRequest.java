@@ -349,6 +349,35 @@ public class OkRequest<T> {
     //===============二次封装部分参数==================//
     //================================================//
 
+    public OkRequest<T> failedCodes(int ... codes) {
+        for (int code : codes) {
+            responseCodes.put(code, false);
+        }
+        return this;
+    }
+
+    public OkRequest<T> succeedCodes(int ... codes) {
+        for (int code : codes) {
+            responseCodes.put(code, true);
+        }
+        return this;
+    }
+
+    public OkRequest<T> convertHandler(ConvertHandler handler) {
+        convertHandler = handler;
+        return this;
+    }
+
+    public OkRequest<T> encryptHandler(EncryptHandler handler) {
+        encryptHandler = handler;
+        return this;
+    }
+
+    public OkRequest<T> headersInterceptor(HeadersInterceptor interceptor) {
+        headersInterceptor = interceptor;
+        return this;
+    }
+
     public OkRequest<T> loading(Context context) {
         if (context instanceof Activity) {
             loadingActivity = (Activity) context;
@@ -386,35 +415,6 @@ public class OkRequest<T> {
 
     public OkRequest<T> loadingSize(float size) {
         OkUtils.getInstance().getLoading().size(size);
-        return this;
-    }
-
-    public OkRequest<T> succeedCodes(int ... codes) {
-        for (int code : codes) {
-            responseCodes.put(code, true);
-        }
-        return this;
-    }
-
-    public OkRequest<T> failedCodes(int ... codes) {
-        for (int code : codes) {
-            responseCodes.put(code, false);
-        }
-        return this;
-    }
-
-    public OkRequest<T> convertHandler(ConvertHandler handler) {
-        convertHandler = handler;
-        return this;
-    }
-
-    public OkRequest<T> encryptHandler(EncryptHandler handler) {
-        encryptHandler = handler;
-        return this;
-    }
-
-    public OkRequest<T> headersInterceptor(HeadersInterceptor interceptor) {
-        headersInterceptor = interceptor;
         return this;
     }
 

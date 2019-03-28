@@ -114,6 +114,9 @@ public class LoadingView extends View {
             this.arcColors = new int[] {ContextCompat.getColor(getContext(), R.color.colorAccent)};
         } else {
             this.arcColors = colors;
+            if (colors.length > arcCount) {
+                arcCount = colors.length;
+            }
         }
         return this;
     }

@@ -1,5 +1,6 @@
 # OkHelper
-OkGo二次封装，应用于简单日常接口调用。
+OkGo二次封装，应用于简单日常接口调用。具有简单上传下载功能。无法使用功能请使用OkGo或联系我。
+OkGo地址：https://github.com/jeasonlzy/okhttp-OkGo
 具体使用请查看Demo和源码
 ## 导入
 1. 在build.gradle添加如下代码：<br>
@@ -18,11 +19,12 @@ dependencies {
 }
 ```
 ## 简单使用
-2.0.0重构Api,优化代码
+
+2.0.0版本重构了Api,优化代码，与之前的不通用
 
 1.初始化
 ```
-OkUtils.getInstance()
+    OkUtils.getInstance()
                 .init(this)             // Application
                 .openDebug()            // 有多个参数
                 .setFailedCode(101)     // 设置默认失败码
@@ -61,10 +63,41 @@ OkUtils.getInstance()
                 // 设置加载对话框。可以通过实现Loading接口继承DialogFragment自定义。
                 .setLoading(new LoadingDialog().duration(500).dimEnabled(true));
 ```
+2.使用
 
+```
+    OkUtils
+                .toObj(this)        // 返回Response<Object>实体，传入this，用来防止异步空指针
+                .toStr(this)        // 返回Response<String>实体
+                .toObj(this, String.class)      // 返回Response<String>实体
+                .toInitial(this)                // 返回Response<String>实体，String为接口返回原始数据
+                .toList(this, String.class)     // 返回Response<List<String>>实体
+                .get(url)           // 请求方式，包括post、delete、put等
+                .tag(tag)           // 请求Tag,用于取消
+                .params("1", "1")   // 传参
+                .multipart(true)    // 强制表单，对get、head、trace无效
+                .spliceUrl(true)    // 强制拼接，对get、head、trace无效
+                .upJson(json)       // 上传json数据,，对get、head、trace无效
+                .upString(string)   // 上传文本数据,，对get、head、trace无效
+                .succeedCodes(0, 200) // code 2、200在onSucceed中回调
+                .failedCodes(10, 201) // code 2、200在onFailed中回调
+                ...                 // 更多请自行摸索
+                .loading(this)      // 显示加载对话框
+                .loadingColors(Color.BLACK) // 颜色有两种状态,一个颜色为一种加载动画，多种颜色为另一种动画
+                .execute(new Callback<Response<Object>>() {
+                    @Override
+                    public void onSucceed(Response<Object> response) {
+                        // 成功回调
+                    }
 
+                    @Override
+                    public void onFailed(Response<Object> response) {
+                        // 失败回调
+                    }
+                });
 
-
+               // 更多请自行摸索或查看源代码
+```
 
 
 
