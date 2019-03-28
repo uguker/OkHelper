@@ -1,7 +1,6 @@
 # OkUtils
-OkGo二次封装，应用于简单日常接口调用。具有简单上传下载功能。无法使用功能请使用OkGo或联系我。
-OkGo地址：https://github.com/jeasonlzy/okhttp-OkGo
-具体使用请查看Demo和源码
+OkGo二次封装，地址：https://github.com/jeasonlzy/okhttp-OkGo。
+应用于简单日常接口调用。没有实现的功能请使用OkGo，具体使用请查看源码。
 ## 导入
 1. 在build.gradle添加如下代码：<br>
 ```
