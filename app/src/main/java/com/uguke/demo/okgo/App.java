@@ -15,15 +15,12 @@ import com.uguke.android.okgo.ResponseInterceptor;
 
 import okhttp3.Headers;
 
-
 public class App extends Application {
 
     @Override
     public void onCreate() {
         super.onCreate();
         HttpHeaders headers = new HttpHeaders();
-        headers.put("X-Bmob-Application-Id", "c64afbe25c179804bedb128bb2a7b73b");
-        headers.put("X-Bmob-REST-API-Key", "bddfd9994878419feca3987943ad05ef");
         headers.put("Content-Type", "application/json");
         OkUtils.getInstance()
                 .init(this)
