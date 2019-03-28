@@ -60,7 +60,7 @@ public class LoadingDialog extends DialogFragment implements Loading<LoadingDial
         arcCount = 1;
         arcIntervalAngle = 30;
         arcShakeRatio = 0.1f;
-        arcStrokeWidth = 3;
+        arcStrokeWidth = 4;
         arcMinAngle = 30;
         arcAddAngle = 270;
         roundUseTime = 100;
@@ -73,7 +73,7 @@ public class LoadingDialog extends DialogFragment implements Loading<LoadingDial
         Dialog dialog = new Dialog(getActivity());
         window = dialog.getWindow();
         if (window != null) {
-            //window.requestFeature(Window.FEATURE_NO_TITLE);
+            window.requestFeature(Window.FEATURE_NO_TITLE);
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         }
         dimEnabled(dimEnabled);
@@ -185,6 +185,8 @@ public class LoadingDialog extends DialogFragment implements Loading<LoadingDial
         return this;
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
     public LoadingDialog dimEnabled(boolean enabled) {
         dimEnabled = enabled;
         if (window != null) {
@@ -199,16 +201,16 @@ public class LoadingDialog extends DialogFragment implements Loading<LoadingDial
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T size(float size) {
+    public LoadingDialog size(float size) {
         loadingSize = size;
-        return (T) this;
+        return this;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T colors(int... color) {
+    public LoadingDialog colors(int... color) {
         arcColors = color;
-        return (T) this;
+        return this;
     }
 
     @Override

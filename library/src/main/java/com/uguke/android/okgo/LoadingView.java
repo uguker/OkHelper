@@ -85,7 +85,7 @@ public class LoadingView extends View {
         arcAddAngle = 270;
         rotateSpeed = 4;
         arcColors = new int[] {ContextCompat.getColor(context, R.color.colorAccent)};
-        arcStrokeWidth = context.getResources().getDisplayMetrics().density * 3;
+        arcStrokeWidth = context.getResources().getDisplayMetrics().density * 4;
     }
 
     @Override

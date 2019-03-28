@@ -15,12 +15,12 @@ allprojects {
 2. 添加依赖关系
 ```
 dependencies {
-	implementation 'com.github.uguker:okutils:2.0.0'
+	implementation 'com.github.uguker:okutils:1.2.0'
 }
 ```
 ## 简单使用
 
-2.0.0版本重构了Api,优化代码，与之前的不通用
+1.2.0版本重构了Api,优化代码，与之前的不通用
 
 1.初始化
 ```
@@ -68,10 +68,10 @@ dependencies {
 ```
     OkUtils
                 .toObj(this)        // 返回Response<Object>实体，传入this，用来防止异步空指针
-                .toStr(this)        // 返回Response<String>实体
-                .toObj(this, String.class)      // 返回Response<String>实体
-                .toInitial(this)                // 返回Response<String>实体，String为接口返回原始数据
-                .toList(this, String.class)     // 返回Response<List<String>>实体
+                //.toStr(this)        // 返回Response<String>实体
+                //.toObj(this, String.class)      // 返回Response<String>实体
+                //.toInitial(this)                // 返回Response<String>实体，String为接口返回原始数据
+                //.toList(this, String.class)     // 返回Response<List<String>>实体
                 .get(url)           // 请求方式，包括post、delete、put等
                 .tag(tag)           // 请求Tag,用于取消
                 .params("1", "1")   // 传参
@@ -84,6 +84,9 @@ dependencies {
                 ...                 // 更多请自行摸索
                 .loading(this)      // 显示加载对话框
                 .loadingColors(Color.BLACK) // 颜色有两种状态,一个颜色为一种加载动画，多种颜色为另一种动画
+                .loadingSize(size)          // 加载对话框大小
+                .loadingDimEnabled(enable)  // 是否显示遮罩
+                //.execute();       // 同步。所有处理器拦截器无效
                 .execute(new Callback<Response<Object>>() {
                     @Override
                     public void onSucceed(Response<Object> response) {
@@ -96,55 +99,8 @@ dependencies {
                     }
                 });
 
+                OkUtils.showLoading(activity);  // 显示加载
+                OkUtils.dismissLoading(activity);  // 取消加载
                // 更多请自行摸索或查看源代码
-```
-
-
-
-历史版本1.1.1使用
-```
-	OkUtils.init(app);
-	OkUtils
-	        // 返回NetData<File>实体
-	        // .toFile()
-		    // 返回NetData<List<Object>>实体
-		    .toList(Object.class)
-		    // 返回NetData<Object>实体
-		    // .toObj(Object.class)
-		    // .toObj()
-		    // .toStr()
-		    // code为11111,1,2的数据将调用onSucceed
-		    //.filters(11111,1,2)
-		    .filters(true, 11111,1,2)
-		    // code为11111,1,2的数据将调用onFailed
-            	    //.filters(false, 11111,1,2)
-		    // 标签
-		    .tag(this)
-		    // 加上这句会显示Loading
-		    .loading(context)
-		    // Loading颜色
-		    .loadingColor(Color.RED)
-		    // 文字
-		    .loadingText("正在加载...")
-		    // 进度条大小
-		    .loadingSize(60)
-		    // 背景是否昏暗
-		    .loadingDimEnabled(true)
-		    // 方法
-		    .post(url)
-		    // 传参
-		    // .params()
-		    // .params()
-		    .execute(new BaseCallback<NetData<List<Object>>>(this) {
-		        @Override
-		        public void onSuccess(NetData<List<Object>> listNetData) {
-
-		        }
-
-		        @Override
-		        public void onError(String msg) {
-
-		        }
-		    });
 ```
 

@@ -13,6 +13,8 @@ public interface Loading<T extends Loading> {
 
     <T> T colors(int... colors);
 
+    <T> T dimEnabled(boolean enable);
+
     void show(Activity activity, String tag);
 
 }

@@ -2,6 +2,7 @@ package com.uguke.android.okgo;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.support.annotation.ColorInt;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -402,8 +403,12 @@ public class OkRequest<T> {
 
     public OkRequest<T> loading(View view) {
         Context context = view.getContext();
-        if (context instanceof Activity) {
-            loadingActivity = (Activity) context;
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
+                loadingActivity = (Activity) context;
+                return this;
+            }
+            context = ((ContextWrapper) context).getBaseContext();
         }
         return this;
     }
@@ -415,6 +420,11 @@ public class OkRequest<T> {
 
     public OkRequest<T> loadingSize(float size) {
         OkUtils.getInstance().getLoading().size(size);
+        return this;
+    }
+
+    public OkRequest<T> loadingDimEnabled(boolean enable) {
+        OkUtils.getInstance().getLoading().dimEnabled(enable);
         return this;
     }
 
