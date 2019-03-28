@@ -379,38 +379,33 @@ public class OkRequest<T> {
         return this;
     }
 
-    public OkRequest<T> loading(Context context) {
-        if (context instanceof Activity) {
-            loadingActivity = (Activity) context;
-        }
-        return this;
-    }
-
-    public OkRequest<T> loading(Activity activity) {
-        loadingActivity = activity;
-        return this;
-    }
-
-    public OkRequest<T> loading(Fragment fragment) {
-        loadingActivity = fragment.getActivity();
-        return this;
-    }
-
-    public OkRequest<T> loading(android.app.Fragment fragment) {
-        loadingActivity = fragment.getActivity();
-        return this;
-    }
-
-    public OkRequest<T> loading(View view) {
-        Context context = view.getContext();
+    public OkRequest<T> loading(@NonNull Context context) {
         while (context instanceof ContextWrapper) {
             if (context instanceof Activity) {
                 loadingActivity = (Activity) context;
                 return this;
             }
-            context = ((ContextWrapper) context).getBaseContext();
         }
         return this;
+    }
+
+    public OkRequest<T> loading(@NonNull Activity activity) {
+        loadingActivity = activity;
+        return this;
+    }
+
+    public OkRequest<T> loading(@NonNull Fragment fragment) {
+        loadingActivity = fragment.getActivity();
+        return this;
+    }
+
+    public OkRequest<T> loading(@NonNull android.app.Fragment fragment) {
+        loadingActivity = fragment.getActivity();
+        return this;
+    }
+
+    public OkRequest<T> loading(@NonNull View view) {
+        return loading(view.getContext());
     }
 
     public OkRequest<T> loadingColors(@ColorInt int... colors) {
