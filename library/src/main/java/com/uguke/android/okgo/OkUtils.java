@@ -1,10 +1,15 @@
 package com.uguke.android.okgo;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Application;
+import android.app.DialogFragment;
+import android.app.FragmentManager;
 import android.content.Context;
-import android.support.annotation.ColorInt;
-import android.support.v4.app.DialogFragment;
+import android.content.ContextWrapper;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.view.View;
 
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.cache.CacheMode;
@@ -26,16 +31,13 @@ import okhttp3.OkHttpClient;
  */
 public class OkUtils {
 
-    protected int mLoadingColor;
-    protected float mLoadingSize;
-    protected String mLoadingText;
-    protected boolean mLoadingDimEnable;
+    private static final String DIALOG_TAG = "ok_utils_dialog_tag";
 
     private int failedCode;
     private int succeedCode;
     private Application app;
-    private Class<? extends Loading> loadingClass;
     private Class<? extends Response> responseClass;
+    private Loading<? extends DialogFragment> loading;
 
     /** 全局过滤器 **/
     private ResponseInterceptor responseInterceptor;
@@ -46,18 +48,20 @@ public class OkUtils {
     /** 全局加密处理器 **/
     private EncryptHandler encryptHandler;
 
-    private Loading<? extends DialogFragment> loading;
-
     static class Holder {
         @SuppressLint("StaticFieldLeak")
         static final OkUtils INSTANCE = new OkUtils();
     }
 
+    public static OkUtils getInstance() {
+        return Holder.INSTANCE;
+    }
+
     private OkUtils() {
-        mLoadingSize = 60;
-        loadingClass = LoadingDialog.class;
         responseClass = ResponseImpl.class;
         loading = new LoadingDialog();
+        failedCode = 101;
+        succeedCode = 200;
     }
 
     public OkUtils init(Application app) {
@@ -66,24 +70,23 @@ public class OkUtils {
         return this;
     }
 
-    public OkUtils openDebug(String tag) {
+    public OkUtils openDebug() {
+        return openDebug("OkUtils", HttpLoggingInterceptor.Level.BODY, Level.INFO);
+    }
+
+    public OkUtils openDebug(String tag, Level colorLevel) {
+        return openDebug("OkUtils", HttpLoggingInterceptor.Level.BODY, colorLevel);
+    }
+
+    public OkUtils openDebug(String tag, HttpLoggingInterceptor.Level printLevel, Level colorLevel) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(tag);
         //log打印级别，决定了log显示的详细程度
-        loggingInterceptor.setPrintLevel(HttpLoggingInterceptor.Level.BODY);
+        loggingInterceptor.setPrintLevel(printLevel);
         //log颜色级别，决定了log在控制台显示的颜色
-        loggingInterceptor.setColorLevel(Level.SEVERE);
+        loggingInterceptor.setColorLevel(colorLevel);
         builder.addInterceptor(loggingInterceptor);
         OkGo.getInstance().setOkHttpClient(builder.build());
-        return this;
-    }
-
-    public OkUtils openDebug() {
-       return openDebug("OkUtils");
-    }
-
-    public OkUtils setResponseClass(Class<? extends Response> clazz) {
-       responseClass = clazz;
         return this;
     }
 
@@ -97,9 +100,10 @@ public class OkUtils {
         return this;
     }
 
-    //================================================//
-    //============OkUtils拦截器处理器部分==============//
-    //================================================//
+    public OkUtils setResponseClass(Class<? extends Response> clazz) {
+        responseClass = clazz;
+        return this;
+    }
 
     public OkUtils setConvertHandler(ConvertHandler handler) {
         convertHandler = handler;
@@ -126,73 +130,36 @@ public class OkUtils {
         return this;
     }
 
-    Loading<? extends DialogFragment> getLoading() {
-        return loading;
-    }
-
-    ConvertHandler getConvertHandler() {
-        return convertHandler;
-    }
-
-    EncryptHandler getEncryptHandler() {
-        return encryptHandler;
-    }
-
-    HeadersInterceptor getHeadersInterceptor() {
-        return headersInterceptor;
-    }
-
-    ResponseInterceptor getResponseInterceptor() {
-        return responseInterceptor;
-    }
-
-    int getFailedCode() {
+    public int getFailedCode() {
         return failedCode;
     }
 
-    int getSucceedCode() {
+    public int getSucceedCode() {
         return succeedCode;
     }
 
-    public Context getContext() {
-        HttpUtils.checkNotNull(app, "please call OkUtils.getInstance().init() first in application!");
-        return app.getApplicationContext();
-    }
-
-    Class<? extends Response> getResponseClass() {
+    public Class<? extends Response> getResponseClass() {
         return responseClass;
     }
 
-    public static OkUtils getInstance() {
-        return Holder.INSTANCE;
+    public ConvertHandler getConvertHandler() {
+        return convertHandler;
     }
 
-    //================================================//
-    //================OkUtils数据请求==================//
-    //================================================//
-
-    public static <T> OkRequest<T> toObj(Object obj, Class<T> clazz) {
-        return new OkRequest<>(obj, clazz, OkRequest.TYPE_NET_OBJECT);
+    public EncryptHandler getEncryptHandler() {
+        return encryptHandler;
     }
 
-    public static <T> OkRequest<T> toObj(Object obj) {
-        return new OkRequest<>(obj, Object.class, OkRequest.TYPE_NET_OBJECT);
+    public HeadersInterceptor getHeadersInterceptor() {
+        return headersInterceptor;
     }
 
-    public static <T> OkRequest<T> toStr(Object obj) {
-        return new OkRequest<>(obj, String.class, OkRequest.TYPE_NET_OBJECT);
+    public ResponseInterceptor getResponseInterceptor() {
+        return responseInterceptor;
     }
 
-    public static <T> OkRequest<File> toFile(Object obj) {
-        return new OkRequest<>(obj, File.class, OkRequest.TYPE_FILE);
-    }
-
-    public static <T> OkRequest<String> toJson(Object obj) {
-        return new OkRequest<>(obj, String.class, OkRequest.TYPE_STRING);
-    }
-
-    public static <T> OkRequest<List<T>> toList(Object obj, Class<T> clazz) {
-        return new OkRequest<>(obj, clazz, OkRequest.TYPE_NET_LIST);
+    public Loading<? extends DialogFragment> getLoading() {
+        return loading;
     }
 
     //================================================//
@@ -229,14 +196,17 @@ public class OkUtils {
         return this;
     }
 
-    public OkUtils cancelTag(Object tag) {
+    public void cancelTag(Object tag) {
         OkGo.getInstance().cancelTag(tag);
-        return this;
     }
 
-    public OkUtils cancelAll() {
+    public void cancelAll() {
         OkGo.getInstance().cancelAll();
-        return this;
+    }
+
+    public Context getContext() {
+        HttpUtils.checkNotNull(app, "please call OkUtils.getInstance().init() first in application!");
+        return app.getApplicationContext();
     }
 
     public HttpParams getCommonParams() {
@@ -267,4 +237,110 @@ public class OkUtils {
         return OkGo.getInstance().getCacheTime();
     }
 
+    //================================================//
+    //================OkUtils数据请求==================//
+    //================================================//
+
+    public static <T> OkRequest<T> toObj(Object context, Class<T> clazz) {
+        return new OkRequest<>(context, clazz, OkRequest.TYPE_RESPONSE_OBJECT);
+    }
+
+    public static <T> OkRequest<T> toObj(Object context) {
+        return new OkRequest<>(context, Object.class, OkRequest.TYPE_RESPONSE_OBJECT);
+    }
+
+    public static <T> OkRequest<T> toStr(Object context) {
+        return new OkRequest<>(context, String.class, OkRequest.TYPE_RESPONSE_OBJECT);
+    }
+
+    public static <T> OkRequest<File> toFile(Object context) {
+        return new OkRequest<>(context, File.class, OkRequest.TYPE_FILE);
+    }
+
+    public static <T> OkRequest<String> toInitial(Object context) {
+        return new OkRequest<>(context, String.class, OkRequest.TYPE_STRING);
+    }
+
+    public static <T> OkRequest<List<T>> toList(Object context, Class<T> clazz) {
+        return new OkRequest<>(context, clazz, OkRequest.TYPE_RESPONSE_LIST);
+    }
+
+    //================================================//
+    //============OkUtils对话框显示与隐藏==============//
+    //================================================//
+
+    public static void showLoading(@NonNull Context context) {
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
+                showLoading((Activity) context);
+                break;
+            }
+        }
+    }
+
+    public static void showLoading(final Activity activity) {
+        if (activity == null) {
+            return;
+        }
+        final Loading<? extends DialogFragment> loading = OkUtils.getInstance().getLoading();
+        if (loading != null) {
+            if (!((DialogFragment) loading).isAdded()) {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        loading.show(activity, DIALOG_TAG);
+                    }
+                });
+            }
+        }
+    }
+
+    public static void showLoading(@NonNull Fragment fragment) {
+        showLoading(fragment.getActivity());
+    }
+
+    public static void showLoading(@NonNull android.app.Fragment fragment) {
+        showLoading(fragment.getActivity());
+    }
+
+    public static void showLoading(@NonNull View view) {
+        showLoading(view.getContext());
+    }
+
+    public static void dismissLoading(@NonNull Context context) {
+        while (context instanceof ContextWrapper) {
+            if (context instanceof Activity) {
+                dismissLoading((Activity) context);
+                break;
+            }
+        }
+    }
+
+    public static void dismissLoading(final Activity activity) {
+        if (activity == null) {
+            return;
+        }
+        final FragmentManager manager = activity.getFragmentManager();
+        final DialogFragment dialog = (DialogFragment) manager.findFragmentByTag(DIALOG_TAG);
+        if (dialog != null) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    dialog.dismiss();
+                }
+            });
+        }
+    }
+
+    public static void dismissLoading(@NonNull Fragment fragment) {
+        dismissLoading(fragment.getActivity());
+    }
+
+    public static void dismissLoading(@NonNull android.app.Fragment fragment) {
+        dismissLoading(fragment.getActivity());
+    }
+
+    public static void dismissLoading(@NonNull View view) {
+        dismissLoading(view.getContext());
+    }
 }

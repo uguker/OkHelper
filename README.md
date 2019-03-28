@@ -14,10 +14,61 @@ allprojects {
 2. 添加依赖关系
 ```
 dependencies {
-	implementation 'com.github.uguker:okutils:1.1.1'
+	implementation 'com.github.uguker:okutils:2.0.0'
 }
 ```
 ## 简单使用
+2.0.0重构Api,优化代码
+
+1.初始化
+```
+OkUtils.getInstance()
+                .init(this)             // Application
+                .openDebug()            // 有多个参数
+                .setFailedCode(101)     // 设置默认失败码
+                .setSucceedCode(200)    // 设置默认成功码
+                .setResponseClass(ResponseImpl.class)   // 设置解析数据接口实现体
+                .addCommonHeaders(headers)   // 添加通用Headers
+                .addCommonParams(params)   // 添加通用Params
+                // 通用数据转换，返回值转为返回实体前是使用的Json数据
+                .setConvertHandler(new ConvertHandler() {
+                    @Override
+                    public String onHandle(String body) {
+                        return body;
+                    }
+                })
+                // 通用加密处理。对参数进行加密
+                .setEncryptHandler(new EncryptHandler() {
+                    @Override
+                    public HttpParams onHandle(HttpParams params) {
+                        return params;
+                    }
+                })
+                // 拦截指定的headers
+                .setHeadersInterceptor(new HeadersInterceptor() {
+                    @Override
+                    public boolean onIntercept(Headers headers) {
+                        return false;
+                    }
+                })
+                // 拦截指定Response
+                .setResponseInterceptor(new ResponseInterceptor() {
+                    @Override
+                    public boolean onIntercept(Response response) {
+                        return false;
+                    }
+                })
+                // 设置加载对话框。可以通过实现Loading接口继承DialogFragment自定义。
+                .setLoading(new LoadingDialog().duration(500).dimEnabled(true));
+```
+
+
+
+
+
+
+
+历史版本1.1.1使用
 ```
 	OkUtils.init(app);
 	OkUtils

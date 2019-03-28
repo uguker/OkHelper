@@ -7,9 +7,14 @@ import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.HttpParams;
 import com.uguke.android.okgo.ConvertHandler;
 import com.uguke.android.okgo.EncryptHandler;
+import com.uguke.android.okgo.HeadersInterceptor;
 import com.uguke.android.okgo.LoadingDialog;
 import com.uguke.android.okgo.OkUtils;
+import com.uguke.android.okgo.Response;
 import com.uguke.android.okgo.ResponseImpl;
+import com.uguke.android.okgo.ResponseInterceptor;
+
+import okhttp3.Headers;
 
 
 public class App extends Application {
@@ -27,8 +32,8 @@ public class App extends Application {
         OkUtils.getInstance()
                 .init(this)
                 .openDebug()
-                .setFailedCode(100)
-                .setSucceedCode(100)
+                .setFailedCode(101)
+                .setSucceedCode(200)
                 .setResponseClass(ResponseImpl.class)
                 .addCommonHeaders(headers)
                 .setConvertHandler(new ConvertHandler() {
@@ -43,7 +48,19 @@ public class App extends Application {
                         return params;
                     }
                 })
-                .setLoading(new LoadingDialog());
+                .setHeadersInterceptor(new HeadersInterceptor() {
+                    @Override
+                    public boolean onIntercept(Headers headers) {
+                        return false;
+                    }
+                })
+                .setResponseInterceptor(new ResponseInterceptor() {
+                    @Override
+                    public boolean onIntercept(Response response) {
+                        return false;
+                    }
+                })
+                .setLoading(new LoadingDialog().duration(500).dimEnabled(true));
     }
 
     @Override

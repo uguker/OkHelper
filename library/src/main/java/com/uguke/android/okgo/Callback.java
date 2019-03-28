@@ -13,12 +13,13 @@ public abstract class Callback<T> {
      * @param response     返回实例
      */
     public abstract void onSucceed(T response);
-
     /**
      * 请求失败回调
      * @param response     返回实例
      */
     public abstract void onFailed(T response);
+
+    public void onCached(com.lzy.okgo.model.Response<String> response) {}
 
     public void onProgress(Progress progress) {}
 }

@@ -8,6 +8,46 @@ import java.io.File;
  */
 class ResponseFactory {
 
+    static <T> Response<T> createFailedResponse(final okhttp3.Response response) {
+        return new Response<T>() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public T body() {
+                return null;
+            }
+
+            @Override
+            public int code() {
+                return response.code();
+            }
+
+            @Override
+            public String message() {
+                return response.message();
+            }
+        };
+    }
+
+    static <T> Response<T> createFailedResponse(final com.lzy.okgo.model.Response response) {
+        return new Response<T>() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public T body() {
+                return null;
+            }
+
+            @Override
+            public int code() {
+                return response.code();
+            }
+
+            @Override
+            public String message() {
+                return response.message();
+            }
+        };
+    }
+
     static <T> Response<T> createResponseBody(final String body) {
         return new Response<T>() {
             @SuppressWarnings("unchecked")
@@ -18,7 +58,7 @@ class ResponseFactory {
 
             @Override
             public int code() {
-                return 0;
+                return OkUtils.getInstance().getSucceedCode();
             }
 
             @Override
@@ -47,7 +87,7 @@ class ResponseFactory {
         };
     }
 
-    static <T> Response<T> createHandledHeaders() {
+    static <T> Response<T> createInterceptHeaders() {
         return new Response<T>() {
             @Override
             public T body() {
@@ -104,7 +144,7 @@ class ResponseFactory {
         };
     }
 
-    static <T> Response<T> createEmptyResponse() {
+    static <T> Response<T> createServerException() {
         return new Response<T>() {
             @Override
             public T body() {
@@ -118,7 +158,7 @@ class ResponseFactory {
 
             @Override
             public String message() {
-                return null;
+                return "服务器异常";
             }
         };
     }

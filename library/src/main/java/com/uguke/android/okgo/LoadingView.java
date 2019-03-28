@@ -41,13 +41,13 @@ public class LoadingView extends View {
     private float arcShakeRatio;
     /** 圆弧宽度 **/
     private float arcStrokeWidth;
+    /** 单页最小角度 **/
+    private float arcMinAngle;
+    /** 单页增量角度 **/
+    private float arcAddAngle;
     /** 圆弧颜色 **/
     private int[] arcColors;
 
-    /** 单页最小角度 **/
-    private float minAngle;
-    /** 单页增量角度 **/
-    private float addAngle;
 
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
@@ -81,8 +81,8 @@ public class LoadingView extends View {
         arcIntervalAngle = 30;
         arcShakeRatio = 0.1f;
         addArcAngle = true;
-        minAngle = 30;
-        addAngle = 270;
+        arcMinAngle = 30;
+        arcAddAngle = 270;
         rotateSpeed = 4;
         arcColors = new int[] {ContextCompat.getColor(context, R.color.colorAccent)};
         arcStrokeWidth = context.getResources().getDisplayMetrics().density * 3;
@@ -122,8 +122,8 @@ public class LoadingView extends View {
      * 设置最小角度（仅对叶数为1有效）
      * @param min 最小角度
      */
-    public LoadingView setMinAngle(float min) {
-        minAngle = min;
+    public LoadingView setArcMinAngle(float min) {
+        arcMinAngle = min;
         return this;
     }
 
@@ -131,8 +131,8 @@ public class LoadingView extends View {
      * 设置增量角度（仅对叶数为1有效）
      * @param add 增量角度
      */
-    public LoadingView setAddAngle(float add) {
-        addAngle = add;
+    public LoadingView setArcAddAngle(float add) {
+        arcAddAngle = add;
         return this;
     }
 
@@ -213,7 +213,7 @@ public class LoadingView extends View {
         } else {
             // 需要画的弧度
             sweepAngle += addArcAngle ? rotateSpeed : -rotateSpeed;
-            addArcAngle = addArcAngle ? sweepAngle < minAngle + addAngle : sweepAngle <= minAngle;
+            addArcAngle = addArcAngle ? sweepAngle < arcMinAngle + arcAddAngle : sweepAngle <= arcMinAngle;
         }
     }
 

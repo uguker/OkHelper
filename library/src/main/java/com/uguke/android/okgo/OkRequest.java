@@ -1,10 +1,10 @@
 package com.uguke.android.okgo;
 
-import android.app.Fragment;
+import android.app.Activity;
+import android.content.Context;
 import android.support.annotation.ColorInt;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.SparseBooleanArray;
 import android.view.View;
@@ -12,6 +12,7 @@ import android.view.View;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import com.lzy.okgo.OkGo;
+import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.callback.FileCallback;
 import com.lzy.okgo.callback.StringCallback;
 import com.lzy.okgo.model.HttpHeaders;
@@ -23,7 +24,11 @@ import com.lzy.okgo.request.base.BodyRequest;
 import com.lzy.okgo.request.base.Request;
 import com.uguke.reflect.TypeBuilder;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Type;
@@ -31,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 
 import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 
 /**
  * OkUtils网络请求
@@ -38,54 +45,50 @@ import okhttp3.Headers;
  */
 public class OkRequest<T> {
 
-    private static final String TAG_DIALOG = "tag_dialog";
-
-    /** NetData内嵌Object **/
-    static final int TYPE_NET_OBJECT = 0;
-    /** NetData内嵌List **/
-    static final int TYPE_NET_LIST = 1;
+    /** Response内嵌Object **/
+    static final int TYPE_RESPONSE_OBJECT = 0;
+    /** Response内嵌List **/
+    static final int TYPE_RESPONSE_LIST = 1;
     /** String数据 **/
     static final int TYPE_STRING = 2;
-    /** String数据 **/
+    /** File数据 **/
     static final int TYPE_FILE = 3;
 
-    // OkGo请求相关
-
     private String requestUrl;
-    private String mUpJson;
-
-    private Object mTag;
-    private FragmentActivity activity;
+    private Object upData;
+    private MediaType mediaType;
+    private Object tag;
+    private boolean multipart;
+    private boolean spliceUrl;
+    private int retryCount;
+    private long cacheTime;
+    private String cacheKey;
+    private CacheMode cacheMode;
     private HttpMethod httpMethod;
     private HttpParams httpParams;
     private HttpHeaders httpHeaders;
     
     private Type responseType;
-    private Class<?> responseDataClass;
-
     private int requestType;
-    // Loading对话框相关
-
     private SparseBooleanArray responseCodes;
     private ConvertHandler convertHandler;
     private EncryptHandler encryptHandler;
     private HeadersInterceptor headersInterceptor;
-
     /** 用来防止空指针 **/
     private Reference<Object> reference;
+    private Activity loadingActivity;
 
-    OkRequest(Object obj, Class<?> clazz, int type) {
+    OkRequest(Object context, Class<?> clazz, int type) {
         requestType = type;
-        responseDataClass = clazz;
-        reference = new WeakReference<>(obj);
+        reference = new WeakReference<>(context);
         OkUtils okUtils = OkUtils.getInstance();
         switch (type) {
-            case TYPE_NET_OBJECT:
+            case TYPE_RESPONSE_OBJECT:
                 responseType = TypeBuilder.newInstance(okUtils.getResponseClass())
                         .addTypeParam(clazz)
                         .build();
                 break;
-            case TYPE_NET_LIST:
+            case TYPE_RESPONSE_LIST:
                 responseType =  TypeBuilder.newInstance(okUtils.getResponseClass())
                         .beginSubType(List.class)
                         .addTypeParam(clazz)
@@ -100,6 +103,7 @@ public class OkRequest<T> {
                 break;
             default:
         }
+        retryCount = 3;
         httpParams = new HttpParams();
         httpHeaders = new HttpHeaders();
         responseCodes = new SparseBooleanArray();
@@ -159,11 +163,98 @@ public class OkRequest<T> {
         return this;
     }
 
-    public OkRequest<T> upJson(String upJson) {
-        mUpJson = upJson;
+    //================================================//
+    //=================请求其他设置===================//
+    //================================================//
+
+    public OkRequest<T>  upString(String string) {
+        this.upData = string;
+        this.mediaType = null;
         return this;
     }
 
+    public OkRequest<T>  upString(String string, MediaType mediaType) {
+        this.upData = string;
+        this.mediaType = mediaType;
+        return this;
+    }
+
+    public OkRequest<T>  upJson(String json) {
+        this.upData = json;
+        this.mediaType = HttpParams.MEDIA_TYPE_JSON;
+        return this;
+    }
+
+    public OkRequest<T>  upJson(JSONObject jsonObject) {
+        this.upData = jsonObject;
+        this.mediaType = null;
+        return this;
+    }
+
+    public OkRequest<T>  upJson(JSONArray jsonArray) {
+        this.upData = jsonArray;
+        this.mediaType = null;
+        return this;
+    }
+
+    public OkRequest<T>  upBytes(byte[] bs) {
+        this.upData = bs;
+        this.mediaType = null;
+        return this;
+    }
+
+    public OkRequest<T>  upBytes(byte[] bs, MediaType mediaType) {
+        this.upData = bs;
+        this.mediaType = mediaType;
+        return this;
+    }
+
+    public OkRequest<T>  upFile(File file) {
+        this.upData = file;
+        this.mediaType = null;
+        return this;
+    }
+
+    public OkRequest<T>  upFile(File file, MediaType mediaType) {
+        this.upData = file;
+        this.mediaType = mediaType;
+        return this;
+    }
+
+    public OkRequest<T> tag(String tag) {
+        this.tag = tag;
+        return this;
+    }
+
+    public OkRequest<T> multipart(boolean multipart) {
+        this.multipart = multipart;
+        return this;
+    }
+
+    public OkRequest<T> spliceUrl(boolean splice) {
+        this.spliceUrl = splice;
+        return this;
+    }
+
+    public OkRequest<T> retryCount(int count) {
+        this.retryCount = count;
+        return this;
+    }
+
+    public OkRequest<T> cacheTime(long time) {
+        this.cacheTime = time;
+        return this;
+    }
+
+    public OkRequest<T> cacheKey(String key) {
+        this.cacheKey = key;
+        return this;
+    }
+
+    public OkRequest<T> cacheMode(CacheMode mode) {
+        this.cacheMode = mode;
+        return this;
+    }
 
     //================================================//
     //=================接口参数设置===================//
@@ -214,6 +305,16 @@ public class OkRequest<T> {
         return this;
     }
 
+    public OkRequest<T> params(String key, File file, String fileName) {
+        httpParams.put(key, file, fileName);
+        return this;
+    }
+
+    public OkRequest<T> params(String key, File file, String fileName, MediaType contentType) {
+        httpParams.put(key, file, fileName, contentType);
+        return this;
+    }
+
     public OkRequest<T> params(String key, List<File> files) {
         httpParams.putFileParams(key, files);
         return this;
@@ -234,13 +335,57 @@ public class OkRequest<T> {
         return this;
     }
 
-    public OkRequest<T> removeParam(String key) {
+    public OkRequest<T> removeParams(String key) {
         httpParams.remove(key);
         return this;
     }
 
     public OkRequest<T> removeAllParams() {
         httpParams.clear();
+        return this;
+    }
+
+    //================================================//
+    //===============二次封装部分参数==================//
+    //================================================//
+
+    public OkRequest<T> loading(Context context) {
+        if (context instanceof Activity) {
+            loadingActivity = (Activity) context;
+        }
+        return this;
+    }
+
+    public OkRequest<T> loading(Activity activity) {
+        loadingActivity = activity;
+        return this;
+    }
+
+    public OkRequest<T> loading(Fragment fragment) {
+        loadingActivity = fragment.getActivity();
+        return this;
+    }
+
+    public OkRequest<T> loading(android.app.Fragment fragment) {
+        loadingActivity = fragment.getActivity();
+        return this;
+    }
+
+    public OkRequest<T> loading(View view) {
+        Context context = view.getContext();
+        if (context instanceof Activity) {
+            loadingActivity = (Activity) context;
+        }
+        return this;
+    }
+
+    public OkRequest<T> loadingColors(@ColorInt int... colors) {
+        OkUtils.getInstance().getLoading().colors(colors);
+        return this;
+    }
+
+    public OkRequest<T> loadingSize(float size) {
+        OkUtils.getInstance().getLoading().size(size);
         return this;
     }
 
@@ -273,17 +418,37 @@ public class OkRequest<T> {
         return this;
     }
 
+    public Response<T> execute() throws IOException {
+        Request<String, ?> request = getCommonRequest();
+        OkUtils.showLoading(loadingActivity);
+        okhttp3.Response response = request.execute();
+        ResponseBody responseBody = response.body();
+        if (response.isSuccessful() && responseBody != null) {
+            String body = responseBody.string();
+            if (requestType == TYPE_STRING) {
+                return ResponseFactory.createResponseBody(body);
+            }
+            return new Gson().fromJson(body, responseType);
+        }
+        return ResponseFactory.createFailedResponse(response);
+    }
+
     @SuppressWarnings("unchecked")
-    public void execute(Callback<Response<T>> callback) {
+    public void execute(@NonNull Callback<Response<T>> callback) {
         // 如果是请求文件
         if (requestType == TYPE_FILE) {
             Request<File, ?> request = OkGo.get(requestUrl);
-            request.tag(mTag);
+            request.tag(tag);
             request.params(httpParams);
             request.headers(httpHeaders);
             executeForFile(request, callback);
             return;
         }
+        Request<String, ?> request = getCommonRequest();
+        executeForCommon(request, callback);
+    }
+
+    private Request<String, ?> getCommonRequest() {
         // 其他正常网络请求
         Request<String, ?> request;
         switch (httpMethod) {
@@ -311,45 +476,61 @@ public class OkRequest<T> {
             default:
                 request = OkGo.get(requestUrl);
         }
-        upData(request);
-        request.tag(mTag);
-        request.headers(httpHeaders);
-        request.params(handleEncrypt(httpParams));
-        executeForCommon(request, callback);
+        request.tag(tag)
+                .retryCount(retryCount)
+                .headers(httpHeaders)
+                .params(handleEncrypt(httpParams));
+        setCache(request);
+        setUpData(request);
+        if (request instanceof BodyRequest) {
+            ((BodyRequest) request)
+                    .isMultipart(multipart)
+                    .isSpliceUrl(spliceUrl);
+        }
+        return request;
     }
 
-    public OkRequest<T> showLoading(FragmentActivity activity) {
-        //mLoading = new LoadingDialog();
-        this.activity = activity;
-        return this;
-    }
-
-    public OkRequest<T> showLoading(Fragment fragment) {
-        //mLoading = new LoadingDialog();
-        activity = (FragmentActivity) fragment.getActivity();
-        return this;
-    }
-
-    public OkRequest<T> showLoading(View view) {
-        //mLoading = new LoadingDialog();
-        activity = (FragmentActivity) view.getContext();
-        return this;
-    }
-
-    public OkRequest<T> loadingColors(@ColorInt int... colors) {
-        OkUtils.getInstance().getLoading().colors(colors);
-        return this;
-    }
-
-    public OkRequest<T> loadingSize(float size) {
-        OkUtils.getInstance().getLoading().size(size);
-        return this;
+    private void setCache(Request<String, ?> request) {
+        if (cacheMode != null) {
+            request.cacheMode(cacheMode);
+            if (!TextUtils.isEmpty(cacheKey)) {
+                request.cacheKey(cacheKey);
+            }
+            if (cacheTime != 0) {
+                request.cacheTime(cacheTime);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private void upData(Request<String, ?> request) {
-        if (!TextUtils.isEmpty(mUpJson) && request instanceof BodyRequest) {
-            ((BodyRequest<String, BodyRequest>) request).upJson(mUpJson);
+    private void setUpData(Request<String, ?> request) {
+        if (upData != null && request instanceof BodyRequest) {
+            BodyRequest<String, BodyRequest> bodyRequest = (BodyRequest<String, BodyRequest>) request;
+            if (upData instanceof File) {
+                if (mediaType == null) {
+                    bodyRequest.upFile((File) upData);
+                } else {
+                    bodyRequest.upFile((File) upData, mediaType);
+                }
+            } else if (upData instanceof JSONObject) {
+                bodyRequest.upJson((JSONObject) upData);
+            } else if (upData instanceof JSONArray) {
+                bodyRequest.upJson((JSONArray) upData);
+            } else if (upData instanceof String) {
+                if (mediaType == HttpParams.MEDIA_TYPE_JSON) {
+                    bodyRequest.upJson((String) upData);
+                } else if (mediaType == null) {
+                    bodyRequest.upString((String) upData);
+                } else {
+                    bodyRequest.upString((String) upData, mediaType);
+                }
+            } else {
+                if (mediaType == null) {
+                    bodyRequest.upBytes((byte []) upData);
+                } else {
+                    bodyRequest.upBytes((byte []) upData, mediaType);
+                }
+            }
         }
     }
 
@@ -360,7 +541,7 @@ public class OkRequest<T> {
                 if (isReleased()) {
                     return;
                 }
-                dismissLoading();
+                OkUtils.dismissLoading(loadingActivity);
                 callback.onSucceed(ResponseFactory.<T>createDownloadComplete(response.body()));
             }
 
@@ -370,7 +551,7 @@ public class OkRequest<T> {
                 if (isReleased()) {
                     return;
                 }
-                showLoading();
+                OkUtils.showLoading(loadingActivity);
             }
 
             @Override
@@ -379,7 +560,7 @@ public class OkRequest<T> {
                 if (isReleased()) {
                     return;
                 }
-                dismissLoading();
+                OkUtils.dismissLoading(loadingActivity);
                 callback.onFailed(null);
             }
 
@@ -401,7 +582,7 @@ public class OkRequest<T> {
                 if (isReleased()) {
                     return;
                 }
-                dismissLoading();
+                OkUtils.dismissLoading(loadingActivity);
                 String body = response.body();
                 if (requestType == TYPE_STRING) {
                     callback.onSucceed(ResponseFactory.<T>createResponseBody(body));
@@ -410,7 +591,7 @@ public class OkRequest<T> {
                 body = handleConvert(body);
                 Headers headers = response.headers();
                 if (interceptHeaders(headers)) {
-                    callback.onFailed(ResponseFactory.<T>createHandledHeaders());
+                    callback.onFailed(ResponseFactory.<T>createInterceptHeaders());
                     return;
                 }
                 Response<T> resultResponse;
@@ -421,7 +602,7 @@ public class OkRequest<T> {
                     return;
                 }
                 if (resultResponse == null) {
-                    callback.onFailed(ResponseFactory.<T>createEmptyResponse());
+                    callback.onFailed(ResponseFactory.<T>createServerException());
                     return;
                 }
                 if (interceptResponse(resultResponse)) {
@@ -436,12 +617,18 @@ public class OkRequest<T> {
             }
 
             @Override
+            public void onCacheSuccess(com.lzy.okgo.model.Response<String> response) {
+                super.onCacheSuccess(response);
+                callback.onCached(response);
+            }
+
+            @Override
             public void onStart(Request<String, ?> request) {
                 super.onStart(request);
                 if (isReleased()) {
                     return;
                 }
-                showLoading();
+                OkUtils.showLoading(loadingActivity);
             }
 
             @Override
@@ -450,12 +637,13 @@ public class OkRequest<T> {
                 if (isReleased()) {
                     return;
                 }
-                dismissLoading();
+                OkUtils.dismissLoading(loadingActivity);
                 switch (response.code()) {
                     case -1:
                         callback.onFailed(ResponseFactory.<T>createNoNetwork());
                         break;
                     default:
+                        callback.onFailed(ResponseFactory.<T>createFailedResponse(response));
                 }
             }
         });
@@ -502,26 +690,4 @@ public class OkRequest<T> {
         return reference == null || reference.get() == null;
     }
 
-    private void showLoading() {
-        if (activity == null) {
-            return;
-        }
-        Loading<? extends DialogFragment> loading = OkUtils.getInstance().getLoading();
-        if (loading != null) {
-            if (!((DialogFragment) loading).isAdded()) {
-                loading.show(activity, TAG_DIALOG);
-            }
-        }
-    }
-
-    private void dismissLoading() {
-        if (activity == null) {
-            return;
-        }
-        FragmentManager manager = activity.getSupportFragmentManager();
-        DialogFragment dialog = (DialogFragment) manager.findFragmentByTag(TAG_DIALOG);
-        if (dialog != null) {
-            dialog.dismiss();
-        }
-    }
 }
