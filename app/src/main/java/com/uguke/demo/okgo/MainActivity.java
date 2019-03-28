@@ -8,14 +8,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.alibaba.android.arouter.facade.annotation.Route;
 import com.uguke.android.okgo.Callback;
 import com.uguke.android.okgo.OkUtils;
 import com.uguke.android.okgo.Response;
 
-import java.io.IOException;
 
-@Route(path = "/app/main")
 public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("WrongViewCast")
@@ -29,8 +26,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 refresh(view);
-//                ARouter.getInstance().build("/app/login")
-//                        .navigation();
 
             }
         });

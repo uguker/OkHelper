@@ -8,12 +8,6 @@ android {
         targetSdkVersion 26
         versionCode 1
         versionName "1.0"
-        javaCompileOptions {
-            annotationProcessorOptions {
-                arguments = [AROUTER_MODULE_NAME: project.getName(), AROUTER_GENERATE_DOC: "enable"]
-            }
-        }
-        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -27,10 +21,4 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation project(':library')
-    implementation 'com.android.support:design:26.1.0'
-    compile 'com.alibaba:arouter-api:1.4.1'
-    annotationProcessor 'com.alibaba:arouter-compiler:1.2.2'
-
-    implementation rootProject.ext.dependencies.okutils
-    implementation rootProject.ext.dependencies.viewanim
 }

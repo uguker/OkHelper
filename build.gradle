@@ -26,20 +26,3 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-
-ext {
-
-    // 是否为组件
-    isComponent = false
-
-
-    dependencies = [
-            okutils     :   'com.github.uguker:okutils:1.1.1',
-            // 事件分发
-            eventbus    :   'org.greenrobot:eventbus:3.1.1',
-            // 屏幕管理工具类(support='26.1.0')
-            screen      :   'com.github.uguker:screen:1.0.5',
-            // 动画框架(support='27.0.2')
-            viewanim    :   'com.github.florent37:viewanimator:1.1.1'
-    ]
-}
