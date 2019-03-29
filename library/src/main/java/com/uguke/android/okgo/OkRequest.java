@@ -227,13 +227,13 @@ public class OkRequest<T> {
         return this;
     }
 
-    public OkRequest<T> multipart(boolean multipart) {
-        this.multipart = multipart;
+    public OkRequest<T> multipart() {
+        this.multipart = true;
         return this;
     }
 
-    public OkRequest<T> spliceUrl(boolean splice) {
-        this.spliceUrl = splice;
+    public OkRequest<T> spliceUrl() {
+        this.spliceUrl = true;
         return this;
     }
 

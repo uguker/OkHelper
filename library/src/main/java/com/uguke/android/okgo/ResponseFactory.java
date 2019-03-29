@@ -9,176 +9,70 @@ import java.io.File;
 class ResponseFactory {
 
     static <T> Response<T> createFailedResponse(final okhttp3.Response response) {
-        return new Response<T>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return response.code();
-            }
-
-            @Override
-            public String message() {
-                return response.message();
-            }
-        };
+        int code = response.code();
+        String message = response.message();
+        return ResponseFactory.createNewResponse(null, code, message);
     }
 
     static <T> Response<T> createFailedResponse(final com.lzy.okgo.model.Response response) {
-        return new Response<T>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return response.code();
-            }
-
-            @Override
-            public String message() {
-                return response.message();
-            }
-        };
+        int code = response.code();
+        String message = response.message();
+        return ResponseFactory.createNewResponse(null, code, message);
     }
 
+    @SuppressWarnings("unchecked")
     static <T> Response<T> createResponseBody(final String body) {
-        return new Response<T>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public T body() {
-                return (T) body;
-            }
-
-            @Override
-            public int code() {
-                return OkUtils.getInstance().getSucceedCode();
-            }
-
-            @Override
-            public String message() {
-                return null;
-            }
-        };
+        int code = OkUtils.getInstance().getSucceedCode();
+        return ResponseFactory.createNewResponse((T) body, code, null);
     }
 
     static <T> Response<T> createParseJsonException() {
-        return new Response<T>() {
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return OkUtils.getInstance().getFailedCode();
-            }
-
-            @Override
-            public String message() {
-                return "Json数据解析异常";
-            }
-        };
+        int code = OkUtils.getInstance().getFailedCode();
+        return ResponseFactory.createNewResponse(null, code, "Json数据解析异常");
     }
 
     static <T> Response<T> createInterceptHeaders() {
-        return new Response<T>() {
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return OkUtils.getInstance().getFailedCode();
-            }
-
-            @Override
-            public String message() {
-                return null;
-            }
-        };
+        int code = OkUtils.getInstance().getFailedCode();
+        return ResponseFactory.createNewResponse(null, code, null);
     }
 
     static <T> Response<T> createInterceptResponse() {
-        return new Response<T>() {
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return OkUtils.getInstance().getFailedCode();
-            }
-
-            @Override
-            public String message() {
-                return null;
-            }
-        };
+        int code = OkUtils.getInstance().getFailedCode();
+        return ResponseFactory.createNewResponse(null, code, null);
     }
 
     static <T> Response<T> createNoNetwork() {
-        return new Response<T>() {
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return OkUtils.getInstance().getFailedCode();
-            }
-
-            @Override
-            public String message() {
-                return "无网络";
-            }
-        };
+        int code = OkUtils.getInstance().getFailedCode();
+        return ResponseFactory.createNewResponse(null, code, "无网络");
     }
 
     static <T> Response<T> createServerException() {
-        return new Response<T>() {
-            @Override
-            public T body() {
-                return null;
-            }
-
-            @Override
-            public int code() {
-                return OkUtils.getInstance().getFailedCode();
-            }
-
-            @Override
-            public String message() {
-                return "服务器异常";
-            }
-        };
+        int code = OkUtils.getInstance().getFailedCode();
+        return ResponseFactory.createNewResponse(null, code, "服务器异常");
     }
 
+    @SuppressWarnings("unchecked")
     static  <T> Response<T> createDownloadComplete(final File file) {
+        int code = OkUtils.getInstance().getSucceedCode();
+        return ResponseFactory.createNewResponse((T) file, code, null);
+    }
+
+    private static <T> Response<T> createNewResponse(final T body, final int code, final String message) {
         return new Response<T>() {
             @SuppressWarnings("unchecked")
             @Override
             public T body() {
-                return (T) file;
+                return body;
             }
 
             @Override
             public int code() {
-                return OkUtils.getInstance().getFailedCode();
+                return code;
             }
 
             @Override
             public String message() {
-                return null;
+                return message;
             }
         };
     }

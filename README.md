@@ -74,8 +74,8 @@ dependencies {
                 .get(url)           // 请求方式，包括post、delete、put等
                 .tag(tag)           // 请求Tag,用于取消
                 .params("1", "1")   // 传参
-                .multipart(true)    // 强制表单，对get、head、trace无效
-                .spliceUrl(true)    // 强制拼接，对get、head、trace无效
+                .multipart()    // 强制表单，对get、head、trace无效
+                .spliceUrl()    // 强制拼接，对get、head、trace无效
                 .upJson(json)       // 上传json数据,，对get、head、trace无效
                 .upString(string)   // 上传文本数据,，对get、head、trace无效
                 .succeedCodes(0, 200) // code 2、200在onSucceed中回调

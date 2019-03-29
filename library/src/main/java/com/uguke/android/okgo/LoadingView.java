@@ -71,20 +71,26 @@ public class LoadingView extends View {
         handler.removeCallbacksAndMessages(null);
     }
 
-    public LoadingView setArcCount(@IntRange(from = 1) int count) {
-        arcCount = count > 1 ? count : 1;
-        return this;
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        viewWidth = MeasureSpec.getSize(widthMeasureSpec);
+        viewHeight = MeasureSpec.getSize(heightMeasureSpec);
     }
 
-    public LoadingView setArcIntervalAngle(float angle) {
-        rotatingArc.setIntervalAngle(angle);
-        return this;
-    }
-
-    public LoadingView setArcStrokeWidth(float width) {
-        float strokeWidth = getResources().getDisplayMetrics().density * width;
-        rotatingArc.setStrokeWidth(strokeWidth);
-        return this;
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        rotatingArc.rotate(arcCount);
+        for (int i = 0; i < arcCount; i++) {
+            int squareLength = Math.min(viewWidth, viewHeight);
+            float strokeWidth = rotatingArc.getRealStrokeWidth(squareLength, arcCount);
+            paint.setColor(arcColors[i % arcColors.length]);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(strokeWidth);
+            float startAngle = rotatingArc.getStartAngle() + i * (360 / arcCount);
+            drawArc(canvas, startAngle, rotatingArc.getSweepAngle());
+        }
     }
 
     public LoadingView setArcColors(@ColorInt int... colors) {
@@ -99,12 +105,8 @@ public class LoadingView extends View {
         return this;
     }
 
-    /**
-     * 设置最小角度（仅对叶数为1有效）
-     * @param min 最小角度
-     */
-    public LoadingView setArcMinAngle(float min) {
-        rotatingArc.setMinAngle(min);
+    public LoadingView setArcCount(@IntRange(from = 1) int count) {
+        arcCount = count > 1 ? count : 1;
         return this;
     }
 
@@ -118,11 +120,16 @@ public class LoadingView extends View {
     }
 
     /**
-     * 设置转一圈需要时间
-     * @param time 转一圈需要时间
+     * 设置最小角度（仅对叶数为1有效）
+     * @param min 最小角度
      */
-    public LoadingView setRoundUseTime(int time) {
-        rotatingArc.setRotateRate(360 / time);
+    public LoadingView setArcMinAngle(float min) {
+        rotatingArc.setMinAngle(min);
+        return this;
+    }
+
+    public LoadingView setArcIntervalAngle(float angle) {
+        rotatingArc.setIntervalAngle(angle);
         return this;
     }
 
@@ -135,34 +142,27 @@ public class LoadingView extends View {
         return this;
     }
 
+    public LoadingView setArcStrokeWidth(float width) {
+        float strokeWidth = getResources().getDisplayMetrics().density * width;
+        rotatingArc.setStrokeWidth(strokeWidth);
+        return this;
+    }
+
+    /**
+     * 设置转一圈需要时间
+     * @param time 转一圈需要时间
+     */
+    public LoadingView setRoundUseTime(int time) {
+        rotatingArc.setRotateRate(360 / time);
+        return this;
+    }
+
     public void start() {
         handler.sendEmptyMessageDelayed(0, 10);
     }
 
     public void stop() {
         handler.removeMessages(0);
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        rotatingArc.refresh(arcCount);
-        for (int i = 0; i < arcCount; i++) {
-            int squareLength = Math.min(viewWidth, viewHeight);
-            float strokeWidth = rotatingArc.getRealStrokeWidth(squareLength, arcCount);
-            paint.setColor(arcColors[i % arcColors.length]);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(strokeWidth);
-            float startAngle = rotatingArc.getStartAngle() + i * (360 / arcCount);
-            drawArc(canvas, startAngle, rotatingArc.getSweepAngle());
-        }
-    }
-
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        viewWidth = MeasureSpec.getSize(widthMeasureSpec);
-        viewHeight = MeasureSpec.getSize(heightMeasureSpec);
     }
 
     private void drawArc(Canvas canvas, float startAngle, float sweepAngle) {
@@ -249,7 +249,7 @@ public class LoadingView extends View {
             return sweepAngle;
         }
 
-        void refresh(int arcCount) {
+        void rotate(int arcCount) {
             // 开始的幅度角度
             startAngle += angleAdding ? rotateRate : rotateRate * 2;
             if (arcCount > 1) {
@@ -286,5 +286,5 @@ public class LoadingView extends View {
         }
 
     }
-
+    
 }
