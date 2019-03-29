@@ -85,7 +85,7 @@ dependencies {
                 .loadingColors(Color.BLACK) // 颜色有两种状态,一个颜色为一种加载动画，多种颜色为另一种动画
                 .loadingSize(size)          // 加载对话框大小
                 .loadingDimEnabled(enable)  // 是否显示遮罩
-                //.execute();       // 同步。所有处理器拦截器无效
+                //.execute();       // 同步。所有ResponseInterceptor和HeadersInterceptor无效
                 .execute(new Callback<Response<Object>>() {
                     @Override
                     public void onSucceed(Response<Object> response) {

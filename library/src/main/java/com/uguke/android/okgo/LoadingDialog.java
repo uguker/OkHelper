@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.app.FragmentManager;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -20,6 +21,9 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * 加载对话框
@@ -215,7 +219,18 @@ public class LoadingDialog extends DialogFragment implements Loading<LoadingDial
 
     @Override
     public void show(Activity activity, String tag) {
-        show(activity.getFragmentManager(), tag);
+        try {
+            Method method = DialogFragment.class.getMethod("showAllowingStateLoss",
+                    FragmentManager.class, String.class);
+            method.setAccessible(true);
+            method.invoke(this, activity.getFragmentManager(), tag);
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

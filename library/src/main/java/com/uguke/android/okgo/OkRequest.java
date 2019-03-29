@@ -429,7 +429,7 @@ public class OkRequest<T> {
         okhttp3.Response response = request.execute();
         ResponseBody responseBody = response.body();
         if (response.isSuccessful() && responseBody != null) {
-            String body = responseBody.string();
+            String body = handleConvert(responseBody.string());
             if (requestType == TYPE_STRING) {
                 return ResponseFactory.createResponseBody(body);
             }
@@ -588,12 +588,11 @@ public class OkRequest<T> {
                     return;
                 }
                 OkUtils.dismissLoading(loadingActivity);
-                String body = response.body();
+                String body = handleConvert(response.body());
                 if (requestType == TYPE_STRING) {
                     callback.onSucceed(ResponseFactory.<T>createResponseBody(body));
                     return;
                 }
-                body = handleConvert(body);
                 Headers headers = response.headers();
                 if (interceptHeaders(headers)) {
                     callback.onFailed(ResponseFactory.<T>createInterceptHeaders());
