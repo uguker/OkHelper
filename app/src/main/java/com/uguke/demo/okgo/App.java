@@ -53,6 +53,6 @@ public class App extends Application {
                         return false;
                     }
                 })
-                .setLoading(new LoadingDialog().duration(500).dimEnabled(true));
+                .setLoading(new LoadingDialog().duration(500));
     }
 }

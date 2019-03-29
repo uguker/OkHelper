@@ -3,6 +3,7 @@ package com.uguke.android.okgo;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Message;
@@ -22,32 +23,12 @@ public class LoadingView extends View {
     private RectF arcRectF;
     private int viewWidth;
     private int viewHeight;
-    private int squareLength;
-
-    /** 开始画弧线的角度 **/
-    private float startAngle;
-    /** 需要画弧线的角度 **/
-    private float sweepAngle;
-    /** 旋转速度 **/
-    private float rotateSpeed;
-    /** 正在增加弧线角度 **/
-    private boolean addArcAngle;
-
     /** 叶数 **/
     private int arcCount;
-    /** 叶型圆弧角度间隔 **/
-    private float arcIntervalAngle;
-    /** 抖动比例 **/
-    private float arcShakeRatio;
-    /** 圆弧宽度 **/
-    private float arcStrokeWidth;
-    /** 单页最小角度 **/
-    private float arcMinAngle;
-    /** 单页增量角度 **/
-    private float arcAddAngle;
     /** 圆弧颜色 **/
     private int[] arcColors;
-
+    /** 旋转圆弧属性 **/
+    private RotatingArc rotatingArc;
 
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
@@ -78,14 +59,10 @@ public class LoadingView extends View {
         paint.setAntiAlias(true);
         arcRectF = new RectF();
         arcCount = 1;
-        arcIntervalAngle = 30;
-        arcShakeRatio = 0.1f;
-        addArcAngle = true;
-        arcMinAngle = 30;
-        arcAddAngle = 270;
-        rotateSpeed = 4;
         arcColors = new int[] {ContextCompat.getColor(context, R.color.colorAccent)};
-        arcStrokeWidth = context.getResources().getDisplayMetrics().density * 4;
+        rotatingArc = new RotatingArc(30, 270, 4);
+        rotatingArc.setIntervalAngle(30);
+        rotatingArc.setRotateRate(0.1f);
     }
 
     @Override
@@ -99,13 +76,14 @@ public class LoadingView extends View {
         return this;
     }
 
-    public LoadingView setArcIntervalAngle(float space) {
-        arcIntervalAngle = space;
+    public LoadingView setArcIntervalAngle(float angle) {
+        rotatingArc.setIntervalAngle(angle);
         return this;
     }
 
     public LoadingView setArcStrokeWidth(float width) {
-        arcStrokeWidth = getResources().getDisplayMetrics().density * width;
+        float strokeWidth = getResources().getDisplayMetrics().density * width;
+        rotatingArc.setStrokeWidth(strokeWidth);
         return this;
     }
 
@@ -126,7 +104,7 @@ public class LoadingView extends View {
      * @param min 最小角度
      */
     public LoadingView setArcMinAngle(float min) {
-        arcMinAngle = min;
+        rotatingArc.setMinAngle(min);
         return this;
     }
 
@@ -135,7 +113,7 @@ public class LoadingView extends View {
      * @param add 增量角度
      */
     public LoadingView setArcAddAngle(float add) {
-        arcAddAngle = add;
+        rotatingArc.setAddAngle(add);
         return this;
     }
 
@@ -144,7 +122,7 @@ public class LoadingView extends View {
      * @param time 转一圈需要时间
      */
     public LoadingView setRoundUseTime(int time) {
-        rotateSpeed = 360 / time;
+        rotatingArc.setRotateRate(360 / time);
         return this;
     }
 
@@ -153,7 +131,7 @@ public class LoadingView extends View {
      * @param ratio 抖动比例
      */
     public LoadingView setArcShakeRatio(float ratio) {
-        this.arcShakeRatio = ratio;
+        rotatingArc.setSnakeRatio(ratio);
         return this;
     }
 
@@ -168,14 +146,15 @@ public class LoadingView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        // 刷新圆弧角度
-        refreshArcAngle();
+        rotatingArc.refresh(arcCount);
         for (int i = 0; i < arcCount; i++) {
+            int squareLength = Math.min(viewWidth, viewHeight);
+            float strokeWidth = rotatingArc.getRealStrokeWidth(squareLength, arcCount);
             paint.setColor(arcColors[i % arcColors.length]);
             paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(getRealArcStrokeWidth());
-            float startDegree = startAngle + i * (360 / arcCount);
-            drawArc(canvas, startDegree, sweepAngle);
+            paint.setStrokeWidth(strokeWidth);
+            float startAngle = rotatingArc.getStartAngle() + i * (360 / arcCount);
+            drawArc(canvas, startAngle, rotatingArc.getSweepAngle());
         }
     }
 
@@ -184,50 +163,128 @@ public class LoadingView extends View {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         viewWidth = MeasureSpec.getSize(widthMeasureSpec);
         viewHeight = MeasureSpec.getSize(heightMeasureSpec);
-        squareLength = Math.min(viewWidth, viewHeight) / 2;
     }
 
     private void drawArc(Canvas canvas, float startAngle, float sweepAngle) {
-        float endAngle = startAngle + sweepAngle;
-        int length = Math.min(viewWidth, viewHeight);
+        int squareLength = Math.min(viewWidth, viewHeight);
+        float strokeWidth = rotatingArc.getRealStrokeWidth(squareLength, arcCount);
         arcRectF.set(
-                Math.abs(length - viewWidth) / 2 + getRealArcStrokeWidth(),
-                Math.abs(length - viewHeight) / 2 + getRealArcStrokeWidth(),
-                Math.abs(length - viewWidth) / 2 + length - getRealArcStrokeWidth(),
-                Math.abs(length - viewHeight) / 2 + length - getRealArcStrokeWidth());
+                Math.abs(squareLength - viewWidth) / 2 + strokeWidth,
+                Math.abs(squareLength - viewHeight) / 2 + strokeWidth,
+                Math.abs(squareLength - viewWidth) / 2 + squareLength - strokeWidth,
+                Math.abs(squareLength - viewHeight) / 2 + squareLength - strokeWidth);
         // 画圆弧
         canvas.drawArc(arcRectF, startAngle, sweepAngle, false, paint);
-        float startX = (float) ((1.0 + Math.cos(Math.PI * startAngle / 180))) / 2 * arcRectF.width() + arcRectF.left;
-        float startY = (float) ((1.0 + Math.sin(Math.PI * startAngle / 180))) / 2 * arcRectF.height() + arcRectF.top;
-        float endX = (float) ((1.0 + Math.cos(Math.PI * endAngle / 180))) / 2 * arcRectF.width() + arcRectF.left;
-        float endY = (float) ((1.0 + Math.sin(Math.PI * endAngle / 180))) / 2 * arcRectF.height() + arcRectF.top;
+        // 画两个圆圈,是弧线变得圆润
         paint.setStyle(Paint.Style.FILL);
-        // 画两个圆圈去掉菱角
-        canvas.drawCircle(startX, startY, getRealArcStrokeWidth() / 2, paint);
-        canvas.drawCircle(endX, endY, getRealArcStrokeWidth() / 2, paint);
-    }
-
-    private void refreshArcAngle() {
-        // 开始的幅度角度
-        startAngle += addArcAngle ? rotateSpeed : rotateSpeed * 2;
-        if (arcCount > 1) {
-            sweepAngle = (360 / arcCount - arcIntervalAngle);
-            sweepAngle = (int) (sweepAngle - sweepAngle / 2 * getRouteNumber());
-        } else {
-            // 需要画的弧度
-            sweepAngle += addArcAngle ? rotateSpeed : -rotateSpeed;
-            addArcAngle = addArcAngle ? sweepAngle < arcMinAngle + arcAddAngle : sweepAngle <= arcMinAngle;
-        }
-    }
-
-    private float getRealArcStrokeWidth() {
-        return getRouteNumber() * squareLength * (arcCount > 1 ? arcShakeRatio : 0) + arcStrokeWidth;
+        PointF startPoint = rotatingArc.getStartPoint(arcRectF);
+        PointF endPoint = rotatingArc.getEndPoint(arcRectF);
+        canvas.drawCircle(startPoint.x, startPoint.y, strokeWidth / 2, paint);
+        canvas.drawCircle(endPoint.x, endPoint.y, strokeWidth / 2, paint);
     }
 
     /**
-     * 获取旋转系数,该系数为0到1的sin值
+     * 转动的弧线数据类
      */
-    private float getRouteNumber() {
-        return (float) ((1.0 + Math.sin(Math.PI * startAngle / 180))) / 2;
+    static final class RotatingArc {
+        /** 单页最小角度 **/
+        private float minAngle;
+        /** 单页最小角度 **/
+        private float addAngle;
+        /** 旋转速度 **/
+        private float rotateRate;
+        /** 抖动比例 **/
+        private float snakeRatio;
+        /** 圆弧宽度 **/
+        private float strokeWidth;
+        /** 叶型圆弧角度间隔 **/
+        private float intervalAngle;
+        /** 开始画弧线的角度 **/
+        private float startAngle;
+        /** 需要画弧线的角度 **/
+        private float sweepAngle;
+        /** 是否正在增加角度 **/
+        private boolean angleAdding;
+        private PointF startPoint;
+        private PointF endPoint;
+
+        RotatingArc(float minAngle, float addAngle, float rotateRate) {
+            this.rotateRate = rotateRate;
+            this.minAngle = minAngle;
+            this.addAngle = addAngle;
+            this.angleAdding = true;
+            this.startPoint = new PointF(0, 0);
+            this.endPoint = new PointF(0, 0);
+        }
+
+        void setMinAngle(float minAngle) {
+            this.minAngle = minAngle;
+        }
+
+        void setAddAngle(float addAngle) {
+            this.addAngle = addAngle;
+        }
+
+        void setRotateRate(float rotateRate) {
+            this.rotateRate = rotateRate;
+        }
+
+        void setSnakeRatio(float snakeRatio) {
+            this.snakeRatio = snakeRatio;
+        }
+
+        void setStrokeWidth(float strokeWidth) {
+            this.strokeWidth = strokeWidth;
+        }
+
+        void setIntervalAngle(float intervalAngle) {
+            this.intervalAngle = intervalAngle;
+        }
+
+        float getStartAngle() {
+            return startAngle;
+        }
+
+        float getSweepAngle() {
+            return sweepAngle;
+        }
+
+        void refresh(int arcCount) {
+            // 开始的幅度角度
+            startAngle += angleAdding ? rotateRate : rotateRate * 2;
+            if (arcCount > 1) {
+                sweepAngle = (360 / arcCount - intervalAngle);
+                sweepAngle = (int) (sweepAngle - sweepAngle / 2 * getRouteNumber());
+            } else {
+                // 需要画的弧度
+                sweepAngle += angleAdding ? rotateRate : -rotateRate;
+                angleAdding = angleAdding ? sweepAngle < minAngle + addAngle : sweepAngle <= minAngle;
+            }
+        }
+
+        PointF getStartPoint(RectF rectF) {
+            float startX = (float) ((1.0 + Math.cos(Math.PI * startAngle / 180))) / 2 * rectF.width() + rectF.left;
+            float startY = (float) ((1.0 + Math.sin(Math.PI * startAngle / 180))) / 2 * rectF.height() + rectF.top;
+            startPoint.set(startX, startY);
+            return startPoint;
+        }
+
+        PointF getEndPoint(RectF rectF) {
+            float endAngle = startAngle + sweepAngle;
+            float startX = (float) ((1.0 + Math.cos(Math.PI * endAngle / 180))) / 2 * rectF.width() + rectF.left;
+            float startY = (float) ((1.0 + Math.sin(Math.PI * endAngle / 180))) / 2 * rectF.height() + rectF.top;
+            endPoint.set(startX, startY);
+            return endPoint;
+        }
+
+        float getRealStrokeWidth(int squareLength, int arcCount) {
+            return getRouteNumber() * squareLength / 2 * (arcCount > 1 ? snakeRatio : 0) + strokeWidth;
+        }
+
+        float getRouteNumber() {
+            return (float) ((1.0 + Math.sin(Math.PI * startAngle / 180))) / 2;
+        }
+
     }
+
 }
